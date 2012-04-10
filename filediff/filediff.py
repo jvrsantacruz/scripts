@@ -156,7 +156,39 @@ if __name__ == "__main__":
                       action="count", default=0,
                       help="Verbosity. Default silent. -v (info) -vv (debug)")
 
-    parser.set_usage("Usage: [options] db.sqlite3")
+    parser.add_option("-i", "--inode", dest="inode",
+                      action="store_true", default=False,
+                      help="Show file inodes.")
+
+    parser.add_option("-g", "--group", dest="group",
+                      action="store_true", default=False,
+                      help="Group paths by inode. Multiple paths in one line")
+
+    parser.add_option("-s", "--size", dest="size",
+                      action="store_true", default=False,
+                      help="Show file sizes")
+
+    parser.add_option("-c", "--count", dest="count",
+                      action="store_true", default=False,
+                      help="Compute difference sizes")
+
+    parser.add_option("-u", "--human", dest="human",
+                      action="store_true", default=False,
+                      help="Human readable sizes")
+
+    parser.add_option("-L", "--link", dest="link",
+                      action="store_true", default=False,
+                      help="Dereference symbolic links")
+
+    parser.add_option("-l", "--left", dest="right",
+                      action="store_false", default=True,
+                      help="Only left side. Dont print right side.")
+
+    parser.add_option("-r", "--right", dest="left",
+                      action="store_false", default=True,
+                      help="Only print right side. Dont print left side.")
+
+    parser.set_usage("Usage: [options] DIR DIR")
 
     (opts, args) = parser.parse_args()
 
@@ -165,8 +197,7 @@ if __name__ == "__main__":
     level = logging_levels[opts.verbose if opts.verbose < 3 else 2]
     logging.basicConfig(level=level, format=_LOGGING_FMT_)
 
-    if len(args) != 2:
-        logging.error("Missing arguments")
+    if len(args) < 2:
         parser.print_help()
         error("Missing directories to check.")
 
