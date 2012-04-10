@@ -29,17 +29,19 @@ def error(msg, is_exit=True):
         exit()
 
 def main(opts, args):
+    sides = len(args)
+    bothsides = -1
     itable = dict()
 
     # Walk directories saving inodes and paths
-    for side in range(2):
+    for side in range(sides):
         for root, dirs, files in os.walk(args[side]):
-            for file in [os.path.join(root, f) for f in files]:
-                inode = os.lstat(file).st_ino
-
                 # New inode, add directly
                 # if the inode already exists, check side
                 if inode not in itable:
+            for fpath in [os.path.join(root, f) for f in files]:
+                inode = os.lstat(fpath).st_ino
+
                     itable[inode] = [side, [file]]
                 else:
                     if itable[inode][0] != side:
@@ -50,7 +52,7 @@ def main(opts, args):
     # Print results
     # Only show files owned by one side.
     symbol = ('<', '>')
-    for side in range(2):
+    for side in range(sides):
         print args[side]
         for inode, row in itable.iteritems():
             itside = row[0]
@@ -58,8 +60,8 @@ def main(opts, args):
                 continue
 
             files = row[1]
-            for file in files:
-                print "{0} {1} {2}".format(symbol[side], inode, file)
+            for fpath in files:
+                print "{0} {1} {2}".format(symbol[side], inode, fpath)
 
 if __name__ == "__main__":
     parser = OptionParser()
