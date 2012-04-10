@@ -119,31 +119,72 @@ def check_args(opts, args):
 
     # If both are the same directory, no difference is possible. Finish.
     if stats[0].st_ino == stats[1].st_ino:
-        for side in range(list(args)):
+        for side in range(len(args)):
             if opts.printside[side]:
                 list_changes(side, {}, opts, args)
         sys.exit(0)
 
 def main(opts, args):
+    """
+    Walks two given directories and prints a diff-like list of files which are
+    only in one of them, optionally printing inode and sizes and dereferencing links.
+    """
     sides = len(args)
     bothsides = -1
     itable = dict()
+    itable_singles = list()
 
     # Walk directories saving inodes and paths
     for side in range(sides):
         for root, dirs, files in os.walk(args[side]):
-                # New inode, add directly
-                # if the inode already exists, check side
-                if inode not in itable:
             for fpath in [os.path.join(root, f) for f in files]:
-                inode = os.lstat(fpath).st_ino
+                fstat = os.lstat(fpath)
 
-                    itable[inode] = [side, [file]]
-                else:
-                    if itable[inode][0] != side:
-                        itable[inode] = [-1]
+                # If dereference links is active, and we find a link
+                # grab the pointed file instead of the linkfile
+                if opts.link and os.path.islink(fpath):
+                    lpath = os.path.realpath(fpath)
+                    lstat = os.lstat(lpath)
+                    if fstat.st_dev != lstat.st_dev:
+                        if opts.verbose:
+                            logging.warning("Couldn't dereference '{0}',"
+                                            "points to a external device".\
+                                            format(fpath))
                     else:
-                        itable[inode][1].append(file)
+                        fpath = lpath
+                        fstat = lstat
+
+                inode = fstat.st_ino
+                size = fstat.st_size
+                nlink = fstat.st_nlink
+
+                # Store and process inode
+                # when nlink is 1, this inode can't appear in any other dir
+                # so we save it to another place to decrease itable size.
+                entry = None if nlink == 1 else itable.get(inode)
+                datarow = [side, [fpath]]
+                if opts.size or opts.count:
+                    datarow.append(size)
+
+                # nlink is 1: save the inode into singles list.
+                # New inode: store path (if nlink is 1, we can assure it's uniq)
+                # inode exists owned by other side: discard data and mark it
+                # inode exists in same side: add hard link path
+                if nlink == 1:
+                    itable_singles.append((inode, datarow,))
+                elif entry is None:
+                    itable[inode] = datarow
+                elif entry[0] == bothsides:
+                    pass
+                elif entry[0] != side:
+                    itable[inode] = [bothsides]
+                else:  # entry[0] == side
+                    itable[inode][1].append(fpath)
+
+    # Remove bothsiders and append singles
+    itable = dict([(inode,data,) for inode,data in itable.items()\
+              if data[0] != bothsides])
+    itable.update(itable_singles)
 
     for side in range(sides):
         if opts.printside[side]:
