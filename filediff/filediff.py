@@ -43,6 +43,57 @@ def human_format(bytes):
 
     return bytes, units[exp]
 
+def list_changes(side, itable, opts, args):
+    """Prints differences for a given side"""
+    # Print results
+    # Only show files owned by one side.
+    symbol = ('<', '>')
+    count = 0
+
+    print os.path.basename(args[side])
+
+    # Build format string
+    formatstr ="{side}"
+    if opts.inode:
+        formatstr += " {inode}"
+    if opts.size:
+        if opts.human:
+            formatstr += " {size:.2f}{unit}"
+        else:
+            formatstr += " {size}{unit}"
+    formatstr += " {path}"
+
+    data = {'side': symbol[side], 'path': ''}
+
+    for inode, row in itable.iteritems():
+        if row[0] != side:
+            continue
+
+        files = row[1]
+        if opts.inode:
+            data['inode'] = inode
+        if opts.size:
+            size, format = human_format(row[2]) if opts.human else (row[2], 'B',)
+            data['size'] = size
+            data['unit'] = format
+        if opts.count:
+            count += int(row[2])
+
+        # Print each difference
+        # If groups option provided, one line per inode, showing all paths.
+        # Otherwise, one line per file
+        if opts.group:
+            data['path'] = ":".join(files)
+            print formatstr.format(**data)
+        else:
+            for fpath in files:
+                data['path'] = fpath
+                print formatstr.format(**data)
+
+    if opts.count:
+        format, unit = human_format(count) if opts.human else (count, 'B',)
+        formatn = "Total: {0}{{1}}".format("{0:.2f}" if opts.human else "{0}")
+        print formatn.format(format, unit)
 
 def main(opts, args):
     sides = len(args)
@@ -65,19 +116,9 @@ def main(opts, args):
                     else:
                         itable[inode][1].append(file)
 
-    # Print results
-    # Only show files owned by one side.
-    symbol = ('<', '>')
     for side in range(sides):
-        print args[side]
-        for inode, row in itable.iteritems():
-            itside = row[0]
-            if itside != side:
-                continue
-
-            files = row[1]
-            for fpath in files:
-                print "{0} {1} {2}".format(symbol[side], inode, fpath)
+        if opts.printside[side]:
+            list_changes(side, itable, opts, args)
 
 if __name__ == "__main__":
     parser = OptionParser()
