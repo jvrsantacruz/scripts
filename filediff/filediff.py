@@ -83,9 +83,9 @@ def list_changes(side, itable, opts, args):
         # If groups option provided, one line per inode, showing all paths.
         # Otherwise, one line per file
         if opts.group:
-            data['path'] = ":".join(files)
-            print formatstr.format(**data)
-        else:
+            files = [":".join(files)]
+
+        if not opts.nolist:
             for fpath in files:
                 data['path'] = fpath
                 print formatstr.format(**data)
@@ -223,11 +223,15 @@ if __name__ == "__main__":
 
     parser.add_option("-l", "--left", dest="right",
                       action="store_false", default=True,
-                      help="Only left side. Dont print right side.")
+                      help="Only left side. Don't print right side.")
 
     parser.add_option("-r", "--right", dest="left",
                       action="store_false", default=True,
-                      help="Only print right side. Dont print left side.")
+                      help="Only print right side. Don't print left side.")
+
+    parser.add_option("-n", "--nolist", dest="nolist",
+                      action="store_true", default=False,
+                      help="Don't print file list.")
 
     parser.set_usage("Usage: [options] DIR DIR")
 
