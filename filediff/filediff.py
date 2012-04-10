@@ -26,7 +26,23 @@ _LOGGING_FMT_ = '%(asctime)s %(levelname)-8s %(message)s'
 def error(msg, is_exit=True):
     logging.error(msg)
     if is_exit:
-        exit()
+        sys.exit(1)
+
+def human_format(bytes):
+    """
+    Convert byte size to a human readable unit.
+    Returns (size,unit)
+    size between 1 and 1023
+    unit in (B, KB, MB, GB, PB)
+    """
+    units = ('B', 'KB', 'MB', 'GB', 'PB')
+    exp = 0
+    while bytes > 1024 and exp < len(units):
+        bytes /= 1024.0
+        exp += 1
+
+    return bytes, units[exp]
+
 
 def main(opts, args):
     sides = len(args)
