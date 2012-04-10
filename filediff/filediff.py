@@ -43,6 +43,34 @@ def human_format(bytes):
 
     return bytes, units[exp]
 
+def check_args(opts, args):
+    """
+    Checks given directories in args
+    Arguments must be readable directories in the same partition.
+    """
+    # Check wether arguments are readable directories
+    for side, dpath in enumerate(args):
+        if not os.path.isdir(dpath):
+            error("Argument '{0}' it is not readable or its not a directory"\
+                  .format(dpath))
+
+        # Remove trailing '/', it makes posterior basename to fail
+        if dpath.endswith("/"):
+            args[side] = dpath[:-1]
+
+    # Check wether directories are in the same device
+    # otherwise inodes are not comparable
+    stats = [os.lstat(dpath) for dpath in args]
+    if stats[0].st_dev != stats[1].st_dev:
+        error("Directories '{0}' and '{1}' are not in the same device"\
+              .format(args[0], args[1]))
+
+    # If both are the same directory, no difference is possible. Finish.
+    if stats[0].st_ino == stats[1].st_ino:
+        for side in range(list(args)):
+            if opts.printside[side]:
+                list_changes(side, {}, opts, args)
+        sys.exit(0)
 
 def main(opts, args):
     sides = len(args)
@@ -98,6 +126,13 @@ if __name__ == "__main__":
     if len(args) != 2:
         logging.error("Missing arguments")
         parser.print_help()
-        sys.exit(1)
+        error("Missing directories to check.")
 
+    if len(args) > 2:
+        parser.print_help()
+        error("Too many directories to check.")
+
+    opts.printside = (opts.left, opts.right)
+
+    check_args(opts, args)
     main(opts, args)
