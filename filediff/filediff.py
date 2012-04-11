@@ -166,26 +166,8 @@ def main():
     # Walk directories saving inodes and paths
     for side in range(sides):
         for root, dirs, files in os.walk(args[side]):
-                fstat = os.lstat(fpath)
-
-                # If dereference links is active, and we find a link
-                # grab the pointed file instead of the linkfile
-                if opts.link and os.path.islink(fpath):
-                    lpath = os.path.realpath(fpath)
-                    lstat = os.lstat(lpath)
-                    if fstat.st_dev != lstat.st_dev:
-                        if opts.verbose:
-                            logging.warning("Couldn't dereference '{0}',"
-                                            "points to a external device".\
-                                            format(fpath))
-                    else:
-                        fpath = lpath
-                        fstat = lstat
-
-                inode = fstat.st_ino
-                size = fstat.st_size
-                nlink = fstat.st_nlink
             for fpath in [os.path.join(root, f) for f in files + dirs]:
+                inode, size, nlink = statfile(fpath)
 
                 # Store and process inode
                 # when nlink is 1, this inode can't appear in any other dir
