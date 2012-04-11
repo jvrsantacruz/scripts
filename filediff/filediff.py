@@ -68,20 +68,10 @@ def list_changes(side, itable):
     symbol = ('<', '>')
     count = 0
 
+    formatstr = make_formatstr()
+    data = {'side': symbol[side]}
     print os.path.basename(args[side])
 
-    # Build format string
-    formatstr ="{side}"
-    if opts.inode:
-        formatstr += " {inode}"
-    if opts.size:
-        if opts.human:
-            formatstr += " {size:.2f}{unit}"
-        else:
-            formatstr += " {size}{unit}"
-    formatstr += " {path}"
-
-    data = {'side': symbol[side], 'path': ''}
 
     for inode, row in itable.iteritems():
         if row[0] != side:
