@@ -28,7 +28,7 @@ def error(msg, is_exit=True):
     if is_exit:
         sys.exit(1)
 
-def human_format(bytes):
+def human_format(nbytes):
     """
     Convert byte size to a human readable unit.
     Returns (size,unit)
@@ -37,11 +37,11 @@ def human_format(bytes):
     """
     units = ('B', 'KB', 'MB', 'GB', 'PB')
     exp = 0
-    while bytes > 1024 and exp < len(units):
-        bytes /= 1024.0
+    while nbytes > 1023 and exp < len(units):
+        nbytes /= 1024.0
         exp += 1
 
-    return bytes, units[exp]
+    return nbytes, units[exp]
 
 def list_changes(side, itable, opts, args):
     """Prints differences for a given side"""
