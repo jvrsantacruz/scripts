@@ -158,7 +158,6 @@ def main(opts, args):
     # Walk directories saving inodes and paths
     for side in range(sides):
         for root, dirs, files in os.walk(args[side]):
-            for fpath in [os.path.join(root, f) for f in files]:
                 fstat = os.lstat(fpath)
 
                 # If dereference links is active, and we find a link
@@ -178,6 +177,7 @@ def main(opts, args):
                 inode = fstat.st_ino
                 size = fstat.st_size
                 nlink = fstat.st_nlink
+            for fpath in [os.path.join(root, f) for f in files + dirs]:
 
                 # Store and process inode
                 # when nlink is 1, this inode can't appear in any other dir
