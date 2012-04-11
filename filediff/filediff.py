@@ -81,9 +81,10 @@ def list_changes(side, itable):
         if opts.inode:
             data['inode'] = inode
         if opts.size:
-            size, format = human_format(row[2]) if opts.human else (row[2], 'B',)
-            data['size'] = size
-            data['unit'] = format
+            data['size'], data['unit'] = human_format(row[2])\
+                    if opts.human else (row[2], 'B',)
+
+        # Accumulate file size in bytes
         if opts.count:
             count += int(row[2])
 
@@ -99,9 +100,9 @@ def list_changes(side, itable):
                 print formatstr.format(**data)
 
     if opts.count:
-        format, unit = human_format(count) if opts.human else (count, 'B',)
+        number, unit = human_format(count) if opts.human else (count, 'B',)
         formatn = "Total: {0}{{1}}".format("{0:.2f}" if opts.human else "{0}")
-        print formatn.format(format, unit)
+        print formatn.format(number, unit)
 
 def check_args():
     """
@@ -173,18 +174,18 @@ def main():
                 # when nlink is 1, this inode can't appear in any other dir
                 # so we save it to another place to decrease itable size.
                 entry = None if nlink == 1 else itable.get(inode)
-                datarow = [side, [fpath]]
+                data = [side, [fpath]]
                 if opts.size or opts.count:
-                    datarow.append(size)
+                    data.append(size)
 
                 # nlink is 1: save the inode into singles list.
                 # New inode: store path (if nlink is 1, we can assure it's uniq)
                 # inode exists owned by other side: discard data and mark it
                 # inode exists in same side: add hard link path
                 if nlink == 1:
-                    itable_singles.append((inode, datarow,))
+                    itable_singles.append((inode, data,))
                 elif entry is None:
-                    itable[inode] = datarow
+                    itable[inode] = data
                 elif entry[0] == bothsides:
                     pass
                 elif entry[0] != side:
@@ -193,7 +194,7 @@ def main():
                     itable[inode][1].append(fpath)
 
     # Remove bothsiders and append singles
-    itable = dict([(inode,data,) for inode,data in itable.items()\
+    itable = dict([(inode, data,) for inode, data in itable.items()\
               if data[0] != bothsides])
     itable.update(itable_singles)
 
