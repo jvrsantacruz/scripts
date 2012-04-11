@@ -124,6 +124,27 @@ def check_args(opts, args):
                 list_changes(side, {}, opts, args)
         sys.exit(0)
 
+def statfile(fpath):
+    """
+    Performs stat over the given path. Dereferences links if needed.
+    Returns (inode, size, nlink)
+    """
+    fstat = os.lstat(fpath)
+
+    # If dereference links is active, and we find a link
+    # grab the pointed file instead of the linkfile
+    if opts.link and os.path.islink(fpath):
+        lpath = os.path.realpath(fpath)
+        lstat = os.lstat(lpath)
+        if fstat.st_dev != lstat.st_dev:
+            logging.warning("Couldn't dereference '{0}',"
+                            "it points to a external device".format(fpath))
+        else:
+            fpath = lpath
+            fstat = lstat
+
+    return fstat.st_ino, fstat.st_size, fstat.st_nlink
+
 def main(opts, args):
     """
     Walks two given directories and prints a diff-like list of files which are
