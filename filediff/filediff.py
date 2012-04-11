@@ -30,7 +30,7 @@ def error(msg, is_exit=True):
 
 def human_format(nbytes):
     """
-    Convert byte size to a human readable unit.
+    Convert byte sizes to a human readable unit.
     Returns (size,unit)
     size between 1 and 1023
     unit in (B, KB, MB, GB, PB)
@@ -70,6 +70,7 @@ def list_changes(side, itable):
 
     formatstr = make_formatstr()
     data = {'side': symbol[side]}
+    # Print the side-dir name as the title
     print os.path.basename(args[side])
 
 
@@ -80,6 +81,8 @@ def list_changes(side, itable):
         files = row[1]
         if opts.inode:
             data['inode'] = inode
+
+        # Output file size, properly formatted
         if opts.size:
             data['size'], data['unit'] = human_format(row[2])\
                     if opts.human else (row[2], 'B',)
@@ -88,7 +91,7 @@ def list_changes(side, itable):
         if opts.count:
             count += int(row[2])
 
-        # Print each difference
+        # Print each difference as a file list
         # If groups option provided, one line per inode, showing all paths.
         # Otherwise, one line per file
         if opts.group:
@@ -99,6 +102,7 @@ def list_changes(side, itable):
                 data['path'] = fpath
                 print formatstr.format(**data)
 
+    # Print total size count for a side
     if opts.count:
         number, unit = human_format(count) if opts.human else (count, 'B',)
         formatn = "Total: {0}{{1}}".format("{0:.2f}" if opts.human else "{0}")
@@ -179,7 +183,7 @@ def main():
                     data.append(size)
 
                 # nlink is 1: save the inode into singles list.
-                # New inode: store path (if nlink is 1, we can assure it's uniq)
+                # New inode: store path (if nlink is 1, we can assure it's unique)
                 # inode exists owned by other side: discard data and mark it
                 # inode exists in same side: add hard link path
                 if nlink == 1:
