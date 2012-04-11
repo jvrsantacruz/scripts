@@ -73,8 +73,7 @@ def list_changes(side, itable):
     # Print the side-dir name as the title
     print os.path.basename(args[side])
 
-
-    for inode, row in itable.iteritems():
+    for inode, row in sorted(itable.iteritems(), key=lambda x:str(x[1][1])):
         if row[0] != side:
             continue
 
