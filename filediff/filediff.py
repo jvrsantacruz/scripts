@@ -61,7 +61,7 @@ def make_formatstr():
 
     return formatstr
 
-def list_changes(side, itable, opts, args):
+def list_changes(side, itable):
     """Prints differences for a given side"""
     # Print results
     # Only show files owned by one side.
@@ -113,7 +113,7 @@ def list_changes(side, itable, opts, args):
         formatn = "Total: {0}{{1}}".format("{0:.2f}" if opts.human else "{0}")
         print formatn.format(format, unit)
 
-def check_args(opts, args):
+def check_args():
     """
     Checks given directories in args
     Arguments must be readable directories in the same partition.
@@ -139,7 +139,7 @@ def check_args(opts, args):
     if stats[0].st_ino == stats[1].st_ino:
         for side in range(len(args)):
             if opts.printside[side]:
-                list_changes(side, {}, opts, args)
+                list_changes(side, {})
         sys.exit(0)
 
 def statfile(fpath):
@@ -163,7 +163,7 @@ def statfile(fpath):
 
     return fstat.st_ino, fstat.st_size, fstat.st_nlink
 
-def main(opts, args):
+def main():
     """
     Walks two given directories and prints a diff-like list of files which are
     only in one of them, optionally printing inode and sizes and dereferencing links.
@@ -227,7 +227,7 @@ def main(opts, args):
 
     for side in range(sides):
         if opts.printside[side]:
-            list_changes(side, itable, opts, args)
+            list_changes(side, itable)
 
 if __name__ == "__main__":
     parser = OptionParser()
@@ -291,5 +291,5 @@ if __name__ == "__main__":
 
     opts.printside = (opts.left, opts.right)
 
-    check_args(opts, args)
-    main(opts, args)
+    check_args()
+    main()
