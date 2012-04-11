@@ -43,6 +43,24 @@ def human_format(nbytes):
 
     return nbytes, units[exp]
 
+def make_formatstr():
+    """
+    Returns a proper entry list formatting line
+    To be called as fmtstr.format(data)
+    with following data: sides [inode] [size] path
+    """
+    formatstr = "{side}"
+    if opts.inode:
+        formatstr += " {inode}"
+    if opts.size:
+        if opts.human:
+            formatstr += " {size:.2f}{unit}"
+        else:
+            formatstr += " {size}{unit}"
+    formatstr += " {path}"
+
+    return formatstr
+
 def list_changes(side, itable, opts, args):
     """Prints differences for a given side"""
     # Print results
