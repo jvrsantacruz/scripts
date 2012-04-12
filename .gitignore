@@ -2,3 +2,5 @@
 *.o
 *.pyc
 *.ps
+*.zip
+*.tex
