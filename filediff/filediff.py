@@ -23,10 +23,12 @@ from optparse import OptionParser
 
 _LOGGING_FMT_ = '%(asctime)s %(levelname)-8s %(message)s'
 
+
 def error(msg, is_exit=True):
     logging.error(msg)
     if is_exit:
         sys.exit(1)
+
 
 def human_format(nbytes):
     """
@@ -42,6 +44,7 @@ def human_format(nbytes):
         exp += 1
 
     return nbytes, units[exp]
+
 
 def make_formatstr():
     """
@@ -61,6 +64,7 @@ def make_formatstr():
 
     return formatstr
 
+
 def list_changes(side, itable):
     """Prints differences for a given side"""
     # Print results
@@ -73,7 +77,7 @@ def list_changes(side, itable):
     # Print the side-dir name as the title
     print os.path.basename(args[side])
 
-    for inode, row in sorted(itable.iteritems(), key=lambda x:str(x[1][1])):
+    for inode, row in sorted(itable.iteritems(), key=lambda x: str(x[1][1])):
         if row[0] != side:
             continue
 
@@ -107,6 +111,7 @@ def list_changes(side, itable):
         formatn = "Total: {0}{{1}}".format("{0:.2f}" if opts.human else "{0}")
         print formatn.format(number, unit)
 
+
 def check_args():
     """
     Checks given directories in args
@@ -136,6 +141,7 @@ def check_args():
                 list_changes(side, {})
         sys.exit(0)
 
+
 def statfile(fpath):
     """
     Performs stat over the given path. Dereferences links if needed.
@@ -157,10 +163,12 @@ def statfile(fpath):
 
     return fstat.st_ino, fstat.st_size, fstat.st_nlink
 
+
 def main():
     """
     Walks two given directories and prints a diff-like list of files which are
-    only in one of them, optionally printing inode and sizes and dereferencing links.
+    only in one of them, optionally printing inode and sizes and dereferencing
+    links.
     """
     sides = len(args)
     bothsides = -1
@@ -181,8 +189,8 @@ def main():
                 if opts.size or opts.count:
                     data.append(size)
 
-                # nlink is 1: save the inode into singles list.
-                # New inode: store path (if nlink is 1, we can assure it's unique)
+                # nlink is 1: save the inode into singles list, it's unique
+                # New inode: store path
                 # inode exists owned by other side: discard data and mark it
                 # inode exists in same side: add hard link path
                 if nlink == 1:
