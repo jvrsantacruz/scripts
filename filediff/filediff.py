@@ -320,6 +320,10 @@ if __name__ == "__main__":
                       action="store_true", default=False,
                       help="Only count directories, not regular files.")
 
+    parser.add_option("-c", "--common", dest="intersection",
+                      action="store_true", default=False,
+                      help="Prints common files instead of different files.")
+
     parser.set_usage("Usage: [options] DIR DIR")
 
     (opts, args) = parser.parse_args()
@@ -337,7 +341,14 @@ if __name__ == "__main__":
         parser.print_help()
         error("Too many directories to check.")
 
-    opts.printside = (opts.left, opts.right)
+    opts.difference = not opts.intersection
+
+    if opts.intersection and (opts.left or opts.right):
+        logging.info("Ignoring --left/--right. Incompatible with --common")
+
+    # Left and right options does not make sense on intersection mode
+    opts.left = opts.left and opts.difference
+    opts.right = opts.right and opts.difference
 
     check_args()
     main()
