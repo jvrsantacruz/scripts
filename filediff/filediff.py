@@ -69,8 +69,8 @@ def list_changes(side, itable):
     """Prints differences for a given side"""
     # Print results
     # Only show files owned by one side.
+    totalsize = 0
     symbol = ('<', '>')
-    count = 0
 
     formatstr = make_formatstr()
     data = {'side': symbol[side]}
@@ -91,12 +91,13 @@ def list_changes(side, itable):
                     if opts.human else (row[2], 'B',)
 
         # Accumulate file size in bytes
-        if opts.count:
-            count += int(row[2])
+        if opts.total:
+            totalsize += int(row[2])
 
         # Print each difference as a file list
         # If groups option provided, one line per inode, showing all paths.
         # Otherwise, one line per file
+        files = row[1]
         if opts.group:
             files = [":".join(files)]
 
@@ -105,9 +106,9 @@ def list_changes(side, itable):
                 data['path'] = fpath
                 print formatstr.format(**data)
 
-    # Print total size count for a side
-    if opts.count:
-        number, unit = human_format(count) if opts.human else (count, 'B',)
+    # Print totalsize for a side
+    if opts.total:
+        num, unit = human_format(totalsize) if opts.human else (totalsize, 'B')
         formatn = "Total: {0}{{1}}".format("{0:.2f}" if opts.human else "{0}")
         print formatn.format(number, unit)
 
@@ -237,7 +238,7 @@ if __name__ == "__main__":
                       action="store_true", default=False,
                       help="Show file sizes")
 
-    parser.add_option("-c", "--count", dest="count",
+    parser.add_option("-t", "--total", dest="total",
                       action="store_true", default=False,
                       help="Compute difference sizes")
 
