@@ -20,7 +20,7 @@ import shutil
 
 from optparse import OptionParser
 
-_COPY_DATE_FMT_ = "%Y%m%d-%H%M" # year month day - hour minute
+_COPY_DATE_FMT_ = "%Y%m%d-%H%M"  # year month day - hour minute
 _WEEK_DATE_FMT_ = "week-%Y-%W"  # year - week of year
 _LOGGING_FMT_ = '%(asctime)s %(levelname)-8s %(message)s'
 
@@ -33,17 +33,21 @@ def get_copy_date():
     """Returns date in the script format"""
     return time.strftime(_COPY_DATE_FMT_)
 
+
 def get_copy_week(copy):
     """Returns the week date in the script format"""
     return time.strftime(_WEEK_DATE_FMT_, time.strptime(copy, _COPY_DATE_FMT_))
+
 
 def get_empty_plan():
     """Returns a basic empty plan"""
     return {"origins": [], "dest": "", "rotate_max": 10}
 
+
 def get_ssh_origins(user, host, origins):
     """Formats each copy target for ssh protocol access"""
     return ["%s@%s:%s" % (user, host, origin) for origin in origins]
+
 
 def get_rsync_origins(module, host, origins):
     """Formats each copy target for rsync protocol access"""
@@ -55,19 +59,25 @@ def rsync(origins, dest, args):
     logging.debug("Rsync call: %s " % " ".join(line))
     return subprocess.call(line)
 
+
 def filter_copy_names(names):
     """Returns only names that are valid copy directory names."""
     def get_name(name):
-        try: time.strptime(name, _COPY_DATE_FMT_)
-        except: return False
-        else: return True
+        try:
+            time.strptime(name, _COPY_DATE_FMT_)
+        except ValueError:
+            return False
+        else:
+            return True
 
     return filter(get_name, names)
 
+
 def format_exclude_args(excludes):
     """Generates command line exclude arguments for rsync"""
-    return [e for sl in zip(["--exclude"]*len(excludes), excludes)
+    return [e for sl in zip(["--exclude"] * len(excludes), excludes)
               for e in sl]
+
 
 def reset_last_pointer(last, dest):
     """Sets the last link to the las copy made"""
@@ -75,12 +85,12 @@ def reset_last_pointer(last, dest):
         os.unlink(last)
     except OSError:
         logging.debug("Couldn't unlink last pointer at %s" % last)
-        pass
 
     try:
         os.symlink(dest, last)
     except OSError:
-        logging.warning("Couldn't link %s to last pointer at %s" % (dest, last))
+        logging.warning("Couldn't link %s to last pointer at %s"
+                        % (dest, last))
     else:
         logging.info("Linked %s last pointer to %s" % (dest, last))
 
@@ -135,7 +145,8 @@ def backup(origins, dest, opts):
                                  origins)
         logging.info("post-hook finished with return value: %i" % retval)
 
-    logging.info("Starting backup for %s to %s" % (" ".join(origins), copy_dir))
+    logging.info("Starting backup for %s to %s"
+                 % (" ".join(origins), copy_dir))
 
     try:
         retval = rsync(origins, copy_dir, args)
@@ -158,15 +169,16 @@ def backup(origins, dest, opts):
 
     if opts.post_hook:
         logging.info("Calling post-hook: %s" % opts.post_hook)
-        retval = subprocess.call([opts.post_hook, opts.dest, opts.logfile, retval]
-                                 + opts.origins)
+        retval = subprocess.call([opts.post_hook, opts.dest,
+                                  opts.logfile, retval] + opts.origins)
         logging.info("post-hook finished with return value: %i" % retval)
 
 def rotate(dest, max):
     """Stores old copies into weekly directories"""
     copies = filter_copy_names(os.listdir(dest))
 
-    logging.info("Found %i of max %i copies in %s" % (len(copies), max, dest))
+    logging.info("Found %i of max %i copies in %s"
+                 % (len(copies), max_copies, dest))
     logging.debug("Copies to rotate: %s" % " ".join(copies))
 
     if len(copies) < max:
