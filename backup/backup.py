@@ -210,13 +210,14 @@ def rotate(dest, max_copies):
         week_dir = os.path.join(dest, get_copy_week(copy))
         last_copy = os.path.join(week_dir, copy)
 
-        try:
-            os.mkdir(week_dir)
-        except OSError:
-            pass
-        else:
-            logging.info("Created week_dir %s" % week_dir)
-            n_weeks += 1
+        if not os.path.exists(week_dir):
+            try:
+                os.mkdir(week_dir)
+            except OSError:
+                pass
+            else:
+                logging.info("Created week_dir %s" % week_dir)
+                n_weeks += 1
 
         try:
             shutil.move(copy_dir, week_dir)
