@@ -300,11 +300,11 @@ if __name__ == "__main__":
                       action="store_true", default=False,
                       help="Dereference symbolic links")
 
-    parser.add_option("-l", "--left", dest="right",
+    parser.add_option("-l", "--left", dest="left",
                       action="store_false", default=True,
                       help="Only left side. Don't print right side.")
 
-    parser.add_option("-r", "--right", dest="left",
+    parser.add_option("-r", "--right", dest="right",
                       action="store_false", default=True,
                       help="Only print right side. Don't print left side.")
 
