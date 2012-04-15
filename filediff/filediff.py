@@ -164,6 +164,41 @@ def statfile(fpath):
     return fstat.st_ino, fstat.st_size, fstat.st_nlink
 
 
+def datarow(side, path):
+    """"Parses path and returns a proper data row
+    returns (inode, size, nlink, data)
+    """
+    inode, size, nlink = statfile(path)
+    data = [side, []]
+
+    # Append size if needed
+    if opts.size or opts.total:
+        data.append(size)
+
+    return inode, size, nlink, data
+
+
+def difference(side, path, itable, singles):
+    "Adds path to itable calculating difference inodes."
+    inode, size, nlink, data = datarow(side, path)
+
+    # nlink is 1, this inode can't appear in any other side
+    if nlink == 1:
+        data[1].append(path)
+        singles.append((inode, data,))
+        return
+
+    # At this point we have a multiple linked file.
+    # We use the table to keep track of this files,
+    # and complete its data or mark it when we find the same.
+    entry = itable.setdefault(inode, data)  # Sets data if inode is new
+    eside = entry[0]
+    if eside == side:          # append same sided link path (or itself)
+        entry[1].append(path)
+    elif eside != side:        # replace data for bothsides
+        entry[0] = [_BOTHSIDES_]
+
+
 def main():
     """
     Walks two given directories and prints a diff-like list of files which are
