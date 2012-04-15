@@ -108,6 +108,10 @@ def read_config(opts, path):
         else:
             logging.info("Reading config from <%s>" % path)
 
+        if not isinstance(plan, dict):
+            logging.error("Error parsing config file <%s>: %s" % (path, e))
+            return None
+
     for arg in ('origins', 'excludes', 'rsync_args'):
         if arg in plan and plan[arg] is not None:
             getattr(opts, arg).extend(plan[arg])
