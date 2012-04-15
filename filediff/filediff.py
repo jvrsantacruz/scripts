@@ -199,6 +199,20 @@ def difference(side, path, itable, singles):
         entry[0] = [_BOTHSIDES_]
 
 
+def intersection(side, path, itable):
+    """Adds path to itable calculating common inodes."""
+    inode, size, nlink, data = datarow(side, path)
+
+    # It cannot be twice in both trees if its not hardlinked.
+    if nlink == 1:  # Ignore it.
+        return
+
+    entry = itable.setdefault(inode, data)  # Sets data if inode is new
+    entry[1].append(path)
+    if entry[0] != side:  # mark it as bothsides
+        entry[0] = _BOTHSIDES_
+
+
 def main():
     """
     Walks two given directories and prints a diff-like list of files which are
