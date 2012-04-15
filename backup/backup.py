@@ -55,9 +55,10 @@ def get_rsync_origins(module, host, origins):
     """Formats each copy target for rsync protocol access"""
     return ["%s::%s/%s" % (host, module, origin) for origin in origins]
 
-def rsync(origins, dest, args):
+
+def rsync(origins, dest, arguments):
     """ Executes rsync for origins to dest with the provided options.  """
-    line = ["rsync"] + args + origins + [dest]
+    line = ["rsync"] + arguments + origins + [dest]
     logging.debug("Rsync call: %s " % " ".join(line))
     return subprocess.call(line)
 
@@ -96,11 +97,12 @@ def reset_last_pointer(last, dest):
     else:
         logging.info("Linked %s last pointer to %s" % (dest, last))
 
-def read_config(opts, path):
+
+def read_config(path):
     """Reads a plan in yaml"""
-    with open(path, "r") as file:
+    with open(path, "r") as pfile:
         try:
-            plan = yaml.load(file, Loader=yaml.Loader)
+            plan = yaml.load(pfile, Loader=yaml.Loader)
         #except yaml.scanner.ScannerError, e:
         except yaml.error.YAMLError, e:
             logging.error("Error parsing config file <%s>: %s" % (path, e))
@@ -119,7 +121,7 @@ def read_config(opts, path):
     # Get missing opts options from the plan
     for arg in ('dest', 'origin_host', 'origin_module', 'origin_user',
                 'rotate_max', 'logfile', 'verbose'):
-        if not getattr(opts, arg): 
+        if not getattr(opts, arg):
             setattr(opts, arg, plan[arg] if arg in plan else "")
 
     # Add host and module/ssh info to origins if needed
@@ -132,18 +134,19 @@ def read_config(opts, path):
                                        opts.origin_host,
                                        opts.origins)
 
-def backup(origins, dest, opts):
+
+def backup(origins, dest):
     """Performs the backup from origins to dest using options"""
     copy_name = get_copy_date()  # Name for the copy
     copy_dir = os.path.join(dest, copy_name)  # Where to store
     last = os.path.join(dest, "last")  # last copy pointer
 
-    args = ["-az", "--delete", "--delete-excluded", "--itemize-changes",
+    arguments = ["-az", "--delete", "--delete-excluded", "--itemize-changes",
                  "--max-size", opts.max_size, "--link-dest", last]
-    args.extend(opts.rsync_args)
+    arguments.extend(opts.rsync_args)
 
     # Append --exclude before each exclude path, for rsync
-    args.extend(format_exclude_args(opts.excludes))
+    arguments.extend(format_exclude_args(opts.excludes))
 
     if opts.pre_hook:
         logging.info("Calling pre-hook: %s" % opts.pre_hook)
@@ -155,7 +158,7 @@ def backup(origins, dest, opts):
                  % (" ".join(origins), copy_dir))
 
     try:
-        retval = rsync(origins, copy_dir, args)
+        retval = rsync(origins, copy_dir, arguments)
     except KeyboardInterrupt:
         logging.info("Rsync cancelled by user.")
         retval = 20
@@ -179,7 +182,8 @@ def backup(origins, dest, opts):
                                   opts.logfile, retval] + opts.origins)
         logging.info("post-hook finished with return value: %i" % retval)
 
-def rotate(dest, max):
+
+def rotate(dest, max_copies):
     """Stores old copies into weekly directories"""
     copies = filter_copy_names(os.listdir(dest))
 
@@ -187,9 +191,9 @@ def rotate(dest, max):
                  % (len(copies), max_copies, dest))
     logging.debug("Copies to rotate: %s" % " ".join(copies))
 
-    if len(copies) < max:
+    if len(copies) < max_copies:
         logging.info("Not enough copies (%d) to perform rotation (%d needed)."\
-                     % (len(copies), max))
+                     % (len(copies), max_copies))
         return
 
     logging.info("Performing rotation at %s" % dest)
@@ -229,18 +233,20 @@ def rotate(dest, max):
     logging.info("Rotation performed. %i copies moved. %i dirs created." %
                  (n_moves, n_weeks))
 
-def main(opts, args):
+
+def main():
     action = args[0]
 
     if action == "backup":
         if not opts.origins:
             error("Action [backup] needs origins.")
-        backup(opts.origins, opts.dest, opts)
+        backup(opts.origins, opts.dest)
     elif action == "rotate":
         rotate(opts.dest, opts.rotate_max)
     elif action == "test":
         opts.rsync_args.append("--dry-run")
-        backup(opts.origins, opts.dest, opts)
+        backup(opts.origins, opts.dest)
+
 
 if __name__ == "__main__":
     parser = OptionParser()
@@ -319,21 +325,21 @@ if __name__ == "__main__":
 
     if args[0] not in ("backup", "rotate", "test"):
         parser.print_help()
-        error("Unknown action %s. Must be: backup|rotate|test" % args[0])
+        error("Unknown action %s. It must be: backup|rotate|test" % args[0])
 
     opts.test = (args[0] == "test")
 
-    read_config(opts, opts.plan)
+    read_config(opts.plan)
 
     # If logfile or verbose has been obtained from config, reconfigure logging.
     if opts.logfile != opts.logfile_from_console\
        or opts.verbose != opts.verbose_from_console:
         level = opts.verbose if opts.verbose < 3 else 2
-	logging.basicConfig(level=logging_levels[level], 
-			format=_LOGGING_FMT_, 
-			filename=opts.logfile)
+        logging.basicConfig(level=logging_levels[level],
+                            format=_LOGGING_FMT_,
+                            filename=opts.logfile)
 
     if not opts.dest:
         error("Destination -d/--dest is mandatory.")
 
-    main(opts, args)
+    main()
