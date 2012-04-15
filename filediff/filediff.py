@@ -336,6 +336,9 @@ if __name__ == "__main__":
     opts.left = opts.left and opts.difference
     opts.right = opts.right and opts.difference
 
+    # --common option implies --group
+    opts.group = opts.group or opts.intersection
+
     # Sides to be printed. First is _BOTHSIDES_
     opts.printside = (opts.intersection, opts.left, opts.right)
 
