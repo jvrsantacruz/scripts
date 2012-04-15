@@ -14,7 +14,6 @@ import os
 import sys
 import yaml
 import time
-import exceptions
 import subprocess
 import logging
 import shutil
@@ -103,7 +102,7 @@ def read_config(opts, path):
         try:
             plan = yaml.load(file, Loader=yaml.Loader)
         #except yaml.scanner.ScannerError, e:
-        except exceptions.Exception, e:
+        except yaml.error.YAMLError, e:
             logging.error("Error parsing config file <%s>: %s" % (path, e))
             return
         else:
