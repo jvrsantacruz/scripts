@@ -1,9 +1,9 @@
-= filediff
+# filediff
 
 Calculates differences between file trees in the same disk grouping by inodes.
 It is useful when trying to know which files changes between strongly hard-linked structures.
 
-== Concept by example
+## Concept by example
 
 For example, given the following tree with two directories holding two files each:
 
@@ -27,7 +27,7 @@ The output of `filediff day1 day2` would be:
 Where all independent files under each tree are shown in a way that resembles the well known
 `diff` unix tool.
 
-= Options
+# Options
 
 There are several options that mostly perform size calculations and add extra information to the
 output. Some of them are:
@@ -68,21 +68,21 @@ output. Some of them are:
 
 The complete list:
 
-	Usage: [options] DIR DIR
+		Usage: [options] DIR DIR
 
-	Options:
-	-h, --help     show this help message and exit
-	-v, --verbose  Verbosity. Default silent -v (info) -vv (debug)
-	-i, --inode    Show file inodes
-	-g, --group    Group paths by inode. Multiple paths in one line
-	-s, --size     Show file sizes
-	-c, --count    Compute difference sizes
-	-u, --human    Human readable sizes
-	-L, --link     Dereference symbolic links
-	-l, --left     Only left side. Don't print right side
-	-r, --right    Only print right side. Don't print left side
-	-n, --nolist   Don't print file list, just counters
+		Options:
+		-h, --help     show this help message and exit
+		-v, --verbose  Verbosity. Default silent -v (info) -vv (debug)
+		-i, --inode    Show file inodes
+		-g, --group    Group paths by inode. Multiple paths in one line
+		-s, --size     Show file sizes
+		-c, --count    Compute difference sizes
+		-u, --human    Human readable sizes
+		-L, --link     Dereference symbolic links
+		-l, --left     Only left side. Don't print right side
+		-r, --right    Only print right side. Don't print left side
+		-n, --nolist   Don't print file list, just counters
 
-== Dependences
+## Dependences
 
 - python 2.6
