@@ -165,6 +165,20 @@ def statfile(fpath):
     return fstat.st_ino, fstat.st_size, fstat.st_nlink
 
 
+def datarow(side, path):
+    """"Parses path and returns a proper data row
+    returns (inode, size, nlink, data)
+    """
+    inode, size, nlink = statfile(path)
+    data = [side, []]
+
+    # Append size if needed
+    if opts.size or opts.total:
+        data.append(size)
+
+    return inode, size, nlink, data
+
+
 def main():
     """
     Walks two given directories and prints a diff-like list of files which are
