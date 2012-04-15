@@ -11,6 +11,7 @@ Supports ssh and rsync format. Reads config data from yaml files.
 """
 
 import os
+import sys
 import yaml
 import time
 import exceptions
@@ -24,10 +25,12 @@ _COPY_DATE_FMT_ = "%Y%m%d-%H%M"  # year month day - hour minute
 _WEEK_DATE_FMT_ = "week-%Y-%W"  # year - week of year
 _LOGGING_FMT_ = '%(asctime)s %(levelname)-8s %(message)s'
 
-def error(str, is_exit=True):
-    logging.error(str) 
-    if is_exit: 
-        exit()
+
+def error(msg, is_exit=True):
+    logging.error(msg)
+    if is_exit:
+        sys.exit()
+
 
 def get_copy_date():
     """Returns date in the script format"""
