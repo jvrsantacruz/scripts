@@ -178,7 +178,12 @@ def main():
     # Walk directories saving inodes and paths
     for side in range(sides):
         for root, dirs, files in os.walk(args[side]):
-            for fpath in [os.path.join(root, f) for f in files + dirs]:
+            if opts.onlydirs:
+                files = dirs
+            elif opts.dirs:
+                files.extend(dirs)
+
+            for fpath in [os.path.join(root, f) for f in files]:
                 inode, size, nlink = statfile(fpath)
 
                 # Store and process inode
@@ -255,6 +260,14 @@ if __name__ == "__main__":
     parser.add_option("-n", "--nolist", dest="nolist",
                       action="store_true", default=False,
                       help="Don't print file list.")
+
+    parser.add_option("-d", "--dirs", dest="dirs",
+                      action="store_true", default=False,
+                      help="Also count directories, not just regular files.")
+
+    parser.add_option("-D", "--onlydirs", dest="onlydirs",
+                      action="store_true", default=False,
+                      help="Only count directories, not regular files.")
 
     parser.set_usage("Usage: [options] DIR DIR")
 
