@@ -22,6 +22,7 @@ import logging
 from optparse import OptionParser
 
 _LOGGING_FMT_ = '%(asctime)s %(levelname)-8s %(message)s'
+_BOTHSIDES_ = -1
 
 
 def error(msg, is_exit=True):
@@ -177,6 +178,27 @@ def datarow(side, path):
         data.append(size)
 
     return inode, size, nlink, data
+
+
+def difference(side, path, itable, singles):
+    "Adds path to itable calculating difference inodes."
+    inode, size, nlink, data = datarow(side, path)
+
+    # nlink is 1, this inode can't appear in any other side
+    if nlink == 1:
+        data[1].append(path)
+        singles.append((inode, data,))
+        return
+
+    # At this point we have a multiple linked file.
+    # We use the table to keep track of this files,
+    # and complete its data or mark it when we find the same.
+    entry = itable.setdefault(inode, data)  # Sets data if inode is new
+    eside = entry[0]
+    if eside == side:          # append same sided link path (or itself)
+        entry[1].append(path)
+    elif eside != side:        # replace data for bothsides
+        entry[0] = [_BOTHSIDES_]
 
 
 def main():
