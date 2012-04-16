@@ -22,6 +22,7 @@ import logging
 from optparse import OptionParser
 
 _LOGGING_FMT_ = '%(asctime)s %(levelname)-8s %(message)s'
+_BOTHSIDES_ = -1
 
 
 def error(msg, is_exit=True):
@@ -52,15 +53,19 @@ def make_formatstr():
     To be called as fmtstr.format(data)
     with following data: sides [inode] [size] path
     """
-    formatstr = "{side}"
-    if opts.inode:
-        formatstr += " {inode}"
+    formatstr = ""
+    if opts.difference:  # No need for side on 'intersection' mode
+        formatstr += "{side} "
+
+    if opts.inode:       # Show inodes
+        formatstr += "{inode} "
+
     if opts.size:
-        if opts.human:
-            formatstr += " {size:.2f}{unit}"
+        if opts.human:   # Conversion's decimals capped to 2
+            formatstr += "{size:.2f}{unit} "
         else:
-            formatstr += " {size}{unit}"
-    formatstr += " {path}"
+            formatstr += "{size}{unit} "
+    formatstr += "{path}"
 
     return formatstr
 
@@ -69,19 +74,19 @@ def list_changes(side, itable):
     """Prints differences for a given side"""
     # Print results
     # Only show files owned by one side.
+    totalsize = 0
     symbol = ('<', '>')
-    count = 0
-
-    formatstr = make_formatstr()
     data = {'side': symbol[side]}
+    formatstr = make_formatstr()
+
     # Print the side-dir name as the title
-    print os.path.basename(args[side])
+    sidepaths = (args[side],) if opts.difference else args
+    print ", ".join(map(os.path.basename, sidepaths))
 
     for inode, row in sorted(itable.iteritems(), key=lambda x: str(x[1][1])):
         if row[0] != side:
             continue
 
-        files = row[1]
         if opts.inode:
             data['inode'] = inode
 
@@ -91,12 +96,13 @@ def list_changes(side, itable):
                     if opts.human else (row[2], 'B',)
 
         # Accumulate file size in bytes
-        if opts.count:
-            count += int(row[2])
+        if opts.total:
+            totalsize += int(row[2])
 
         # Print each difference as a file list
         # If groups option provided, one line per inode, showing all paths.
         # Otherwise, one line per file
+        files = row[1]
         if opts.group:
             files = [":".join(files)]
 
@@ -105,11 +111,11 @@ def list_changes(side, itable):
                 data['path'] = fpath
                 print formatstr.format(**data)
 
-    # Print total size count for a side
-    if opts.count:
-        number, unit = human_format(count) if opts.human else (count, 'B',)
+    # Print totalsize for a side
+    if opts.total:
+        num, unit = human_format(totalsize) if opts.human else (totalsize, 'B')
         formatn = "Total: {0}{{1}}".format("{0:.2f}" if opts.human else "{0}")
-        print formatn.format(number, unit)
+        print formatn.format(num, unit)
 
 
 def check_args():
@@ -136,9 +142,9 @@ def check_args():
 
     # If both are the same directory, no difference is possible. Finish.
     if stats[0].st_ino == stats[1].st_ino:
-        for side in range(len(args)):
-            if opts.printside[side]:
-                list_changes(side, {})
+        for side, isprint in enumerate(opts.printside):
+            if isprint:
+                list_changes(side - 1, {})
         sys.exit(0)
 
 
@@ -220,52 +226,34 @@ def main():
     links.
     """
     sides = len(args)
-    bothsides = -1
     itable = dict()
     itable_singles = list()
 
     # Walk directories saving inodes and paths
     for side in range(sides):
         for root, dirs, files in os.walk(args[side]):
+            # Also (or just) check directories
             if opts.onlydirs:
                 files = dirs
             elif opts.dirs:
                 files.extend(dirs)
 
             for fpath in [os.path.join(root, f) for f in files]:
-                inode, size, nlink = statfile(fpath)
+                if opts.difference:
+                    difference(side, fpath, itable, itable_singles)
+                else:
+                    intersection(side, fpath, itable)
 
-                # Store and process inode
-                # when nlink is 1, this inode can't appear in any other dir
-                # so we save it to another place to decrease itable size.
-                entry = None if nlink == 1 else itable.get(inode)
-                data = [side, [fpath]]
-                if opts.size or opts.count:
-                    data.append(size)
-
-                # nlink is 1: save the inode into singles list, it's unique
-                # New inode: store path
-                # inode exists owned by other side: discard data and mark it
-                # inode exists in same side: add hard link path
-                if nlink == 1:
-                    itable_singles.append((inode, data,))
-                elif entry is None:
-                    itable[inode] = data
-                elif entry[0] == bothsides:
-                    pass
-                elif entry[0] != side:
-                    itable[inode] = [bothsides]
-                else:  # entry[0] == side
-                    itable[inode][1].append(fpath)
-
-    # Remove bothsiders and append singles
-    itable = dict([(inode, data,) for inode, data in itable.items()\
-              if data[0] != bothsides])
+    # Keep/Remove bothsiders and append singles
+    fsel = lambda dat: dat[0] != _BOTHSIDES_ if opts.difference\
+                        else dat[0] == _BOTHSIDES_
+    itable = dict((ind, dat,) for ind, dat in itable.iteritems() if fsel(dat))
     itable.update(itable_singles)
 
-    for side in range(sides):
-        if opts.printside[side]:
-            list_changes(side, itable)
+    # Print output
+    for side, isprint in enumerate(opts.printside):
+        if isprint:
+            list_changes(side - 1, itable)
 
 if __name__ == "__main__":
     parser = OptionParser()
@@ -286,7 +274,7 @@ if __name__ == "__main__":
                       action="store_true", default=False,
                       help="Show file sizes")
 
-    parser.add_option("-c", "--count", dest="count",
+    parser.add_option("-t", "--total", dest="total",
                       action="store_true", default=False,
                       help="Compute difference sizes")
 
@@ -298,11 +286,11 @@ if __name__ == "__main__":
                       action="store_true", default=False,
                       help="Dereference symbolic links")
 
-    parser.add_option("-l", "--left", dest="right",
+    parser.add_option("-l", "--left", dest="left",
                       action="store_false", default=True,
                       help="Only left side. Don't print right side.")
 
-    parser.add_option("-r", "--right", dest="left",
+    parser.add_option("-r", "--right", dest="right",
                       action="store_false", default=True,
                       help="Only print right side. Don't print left side.")
 
@@ -317,6 +305,10 @@ if __name__ == "__main__":
     parser.add_option("-D", "--onlydirs", dest="onlydirs",
                       action="store_true", default=False,
                       help="Only count directories, not regular files.")
+
+    parser.add_option("-c", "--common", dest="intersection",
+                      action="store_true", default=False,
+                      help="Prints common files instead of different files.")
 
     parser.set_usage("Usage: [options] DIR DIR")
 
@@ -335,7 +327,20 @@ if __name__ == "__main__":
         parser.print_help()
         error("Too many directories to check.")
 
-    opts.printside = (opts.left, opts.right)
+    opts.difference = not opts.intersection
+
+    if opts.intersection and (opts.left or opts.right):
+        logging.info("Ignoring --left/--right. Incompatible with --common")
+
+    # Left and right options does not make sense on intersection mode
+    opts.left = opts.left and opts.difference
+    opts.right = opts.right and opts.difference
+
+    # --common option implies --group
+    opts.group = opts.group or opts.intersection
+
+    # Sides to be printed. First is _BOTHSIDES_
+    opts.printside = (opts.intersection, opts.left, opts.right)
 
     check_args()
     main()

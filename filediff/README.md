@@ -27,10 +27,28 @@ The output of `filediff day1 day2` would be:
 Where all independent files under each tree are shown in a way that resembles the well known
 `diff` unix tool.
 
+More formally, what the script does is to calculate the set difference for the two sets of
+inodes under each directory tree.
+
 # Options
 
-There are several options that mostly perform size calculations and add extra information to the
+There are several options that perform size calculations and add extra information to the
 output. Some of them are:
+
+- **--common**: Lists files present in both directory trees instead of the ones exclusive of one of
+  them, which is the default behaviour.
+
+  Calling the script with the `--common` option with the following trees, will list the only file
+  that they have in common, tha's it `donotchanges.txt`.
+
+		day1                        day2
+		|                            |
+		|- 1550 donotchanges.txt --> |- 1550 donotchanges.txt
+		`- 1327 dochanges.txt        `- 8702 dochanges.txt
+
+		$ filediff day1 day2 --common
+		day1, day2
+		day1/donotchanges.txt:day2/donotchanges.txt
 
 - **--dirs** **--onlydirs**: You cannot hard-link directories, so they'll always be different
   within different trees. You probably count with that, so the script's default behaviour is to
@@ -41,6 +59,7 @@ output. Some of them are:
 - **--group**: One line per real file, thats it, inode. If several files in the same tree are
   linked, they all appear in the same line, separated by semicolon. 
   Useful when concatenating with `wc -l` or there is lots of hard-links under the same tree.
+
   		$ filediff day1 day2 --group
 		day1
 		< day1/dochanges.txt
@@ -49,6 +68,7 @@ output. Some of them are:
 		> day2/dochanges-link.txt
 
 - **--size**: Shows file sizes in the output.
+
 		$ filediff day1 day2 --size
 		day1
 		< 150B day1/dochanges.txt
@@ -56,6 +76,7 @@ output. Some of them are:
 		> 373B day2/dochanges.txt
 
 - **--count**: Computes total sizes per each file tree:
+
 		$ filediff day1 day2 --count
 		day1
 		< day1/dochanges.txt
@@ -66,22 +87,25 @@ output. Some of them are:
 
 - **--left** **--right**: List just one of the sides.
 
-The complete list:
+The complete options list:
 
-		Usage: [options] DIR DIR
+	Usage: [options] DIR DIR
 
-		Options:
-		-h, --help     show this help message and exit
-		-v, --verbose  Verbosity. Default silent -v (info) -vv (debug)
-		-i, --inode    Show file inodes
-		-g, --group    Group paths by inode. Multiple paths in one line
-		-s, --size     Show file sizes
-		-c, --count    Compute difference sizes
-		-u, --human    Human readable sizes
-		-L, --link     Dereference symbolic links
-		-l, --left     Only left side. Don't print right side
-		-r, --right    Only print right side. Don't print left side
-		-n, --nolist   Don't print file list, just counters
+	Options:
+	-h, --help      show this help message and exit
+	-v, --verbose   Verbosity. Default silent. -v (info) -vv (debug)
+	-i, --inode     Show file inodes.
+	-g, --group     Group paths by inode. Multiple paths in one line
+	-s, --size      Show file sizes
+	-t, --total     Compute difference sizes
+	-u, --human     Human readable sizes
+	-L, --link      Dereference symbolic links
+	-l, --left      Only left side. Don't print right side.
+	-r, --right     Only print right side. Don't print left side.
+	-n, --nolist    Don't print file list.
+	-d, --dirs      Also count directories, not just regular files.
+	-D, --onlydirs  Only count directories, not regular files.
+	-c, --common    Prints common files instead of different files.
 
 ## Dependences
 
