@@ -35,16 +35,17 @@ inodes under each directory tree.
 There are several options that perform size calculations and add extra information to the
 output. Some of them are:
 
-- **--common**: Lists files present in both directory trees instead of the ones exclusive of one of
-  them, which is the default behaviour.
-
-  Calling the script with the `--common` option with the following trees, will list the only file
-  that they have in common, tha's it `donotchanges.txt`.
+- **--common**: Lists files present in both trees. Only shows files common to both filesets, when
+  the default behaviour is to only list the exclusive ones.
+  Eg: In this directories we have two individual files and one file hard-linked in both.
 
 		day1                        day2
 		|                            |
 		|- 1550 donotchanges.txt --> |- 1550 donotchanges.txt
 		`- 1327 dochanges.txt        `- 8702 dochanges.txt
+
+  Calling the script with the `--common` option, will list the only file that they have in common,
+  that is `donotchanges.txt`.
 
 		$ filediff day1 day2 --common
 		day1, day2
@@ -52,9 +53,9 @@ output. Some of them are:
 
 - **--dirs** **--onlydirs**: You cannot hard-link directories, so they'll always be different
   within different trees. You probably count with that, so the script's default behaviour is to
-  ignore them, to avoid adding noise to the output. But sometimes you could want having directories
-  in account, specially when calculating used space in large trees, when the accumulated size of
-  all directory entries can be significant.
+  ignore them, to avoid adding noise to the output. But sometimes you might want having these
+  directory sizes in account, specially when calculating used space in large trees, where the
+  accumulated size of all directory entries can be significant.
 
 - **--group**: One line per real file, thats it, inode. If several files in the same tree are
   linked, they all appear in the same line, separated by semicolon. 
@@ -64,8 +65,7 @@ output. Some of them are:
 		day1
 		< day1/dochanges.txt
 		day2
-		> day2/dochanges.txt
-		> day2/dochanges-link.txt
+		> day2/dochanges.txt:day2/dochanges-link.txt
 
 - **--size**: Shows file sizes in the output.
 
