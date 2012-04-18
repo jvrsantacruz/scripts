@@ -6,8 +6,8 @@ Javier Santacruz 16/07/2011
 
 Backup script, rsync based.
 Creates a backup scheme where each backup is a standalone copy of its contents.
-Copies are shared hard links, saving lots of space.
-Supports ssh and rsync format. Reads config data from yaml files.
+Copies shares hard links, saving lots of space.
+Reads config data from yaml files.
 """
 
 import os
@@ -32,32 +32,32 @@ def error(msg, is_exit=True):
 
 
 def get_copy_date():
-    """Returns date in the script format"""
+    "Returns date in the script format"
     return time.strftime(_COPY_DATE_FMT_)
 
 
 def get_copy_week(copy):
-    """Returns the week date in the script format"""
+    "Returns the week date in the script format"
     return time.strftime(_WEEK_DATE_FMT_, time.strptime(copy, _COPY_DATE_FMT_))
 
 
 def get_empty_plan():
-    """Returns a basic empty plan"""
+    "Returns a basic empty plan"
     return {"origins": [], "dest": "", "rotate_max": 10}
 
 
 def get_ssh_origins(user, host, origins):
-    """Formats each copy target for ssh protocol access"""
+    "Formats each copy target for ssh protocol access"
     return ["%s@%s:%s" % (user, host, origin) for origin in origins]
 
 
 def get_rsync_origins(module, host, origins):
-    """Formats each copy target for rsync protocol access"""
+    "Formats each copy target for rsync protocol access"
     return ["%s::%s/%s" % (host, module, origin) for origin in origins]
 
 
 def rsync(origins, dest, arguments):
-    """ Executes rsync for origins to dest with the provided options.  """
+    "Executes rsync for origins to dest with the provided options."
     line = ["rsync"] + arguments + origins + [dest]
     logging.debug("Rsync call: %s " % " ".join(line))
     return subprocess.call(line)
@@ -258,7 +258,8 @@ if __name__ == "__main__":
 
     parser.add_option("-o", "--origin", dest="origins",
                       action="append", default=[],
-                      help="Add location to backup.")
+                      help="Add location to backup."
+                      " Can be called multiple times")
 
     parser.add_option("-d", "--dest", dest="dest",
                       action="store", default="",
@@ -281,16 +282,17 @@ if __name__ == "__main__":
                       help="User for ssh origins if needed.")
 
     parser.add_option("-e", "--exclude", dest="excludes",
-                      action="append", default=[], 
-                      help="Exclude patterns.")
+                      action="append", default=[],
+                      help="Exclude patterns. Can be called multiple times")
 
     parser.add_option("-s", "--max-size", dest="max_size",
-                      action="store", default="500M", 
+                      action="store", default="500M",
                       help="Exclude big files. Default 500M.")
 
     parser.add_option("-a", "--rsync-args", dest="rsync_args",
                       action="append", default=[],
-                      help="Extra args for rsync.")
+                      help="Extra args for rsync."
+                      " Can be called multiple times")
 
     parser.add_option("-l", "--logfile", dest="logfile", action="store",
                       default="", help="Path to logfile to store log. Will log"
@@ -315,8 +317,8 @@ if __name__ == "__main__":
 
     logging_levels = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
     level = opts.verbose if opts.verbose < 3 else 2
-    logging.basicConfig(level=logging_levels[level], 
-                        format=_LOGGING_FMT_, 
+    logging.basicConfig(level=logging_levels[level],
+                        format=_LOGGING_FMT_,
                        filename=opts.logfile)
 
     # Check arguments
