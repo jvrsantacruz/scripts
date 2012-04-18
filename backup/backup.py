@@ -23,6 +23,9 @@ from optparse import OptionParser
 _COPY_DATE_FMT_ = "%Y%m%d-%H%M"  # year month day - hour minute
 _WEEK_DATE_FMT_ = "week-%Y-%W"  # year - week of year
 _LOGGING_FMT_ = '%(asctime)s %(levelname)-8s %(message)s'
+_MULTIPLE_OPTIONS_ = ('origins', 'excludes', 'rsync_args')
+_SINGLE_OPTIONS_ = ('dest', 'origin_host', 'origin_module', 'origin_user',
+                    'rotate_max', 'logfile', 'verbose')
 
 
 def error(msg, is_exit=True):
@@ -114,15 +117,16 @@ def read_config(path):
             logging.error("Error parsing config file <%s>: %s" % (path, e))
             return None
 
-    for arg in ('origins', 'excludes', 'rsync_args'):
-        if arg in plan and plan[arg] is not None:
-            getattr(opts, arg).extend(plan[arg])
+    # Set parameters with multiple values
+    for arg, argval in [(arg, plan.get(arg)) for arg in _MULTIPLE_OPTIONS_]:
+        if argval is not None:
+            getattr(opts, arg).extend(argval)
 
-    # Get missing opts options from the plan
-    for arg in ('dest', 'origin_host', 'origin_module', 'origin_user',
-                'rotate_max', 'logfile', 'verbose'):
-        if not getattr(opts, arg):
-            setattr(opts, arg, plan[arg] if arg in plan else "")
+    # Get regular monovalue options from the plan.
+    # Command-line arguments have precedence, dont' override them.
+    unsetargs = filter(lambda arg: not getattr(opts, arg), _SINGLE_OPTIONS_)
+    for arg, argval in [(arg, plan.get(arg)) for arg in unsetargs]:
+        setattr(opts, arg, argval if argval is not None in plan else "")
 
     # Add host and module/ssh info to origins if needed
     if opts.origin_host and opts.origin_module:
