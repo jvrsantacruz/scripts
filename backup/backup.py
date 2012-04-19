@@ -158,7 +158,8 @@ def backup(origins, dest):
     arguments.extend(opts.rsync_args)
 
     # Append --exclude before each exclude path, for rsync
-    arguments.extend(format_exclude_args(opts.excludes))
+    logging.debug(opts.exclude)
+    arguments.extend(format_exclude_args(opts.exclude))
 
     if opts.pre_hook:
         hookcall("pre_hook", opts.dest, opts.logfile, origins)
