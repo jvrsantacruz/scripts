@@ -98,14 +98,18 @@ bytes are change, it could end-up in 15Mb of new directories.
 
 ## The Plan file
 
-The plan file supports each single command-line option in its *long* form.
-For single options, just write `name: value`, for multiple options, the ones that can have more
-than one value, you set a *YAML* list. For example, to set two paths as origins, you would write a
-YAML list:
+The plan file supports each single command-line option in its *long* form.  For single options,
+just write `name: value`, for multiple options, the ones that can have more than one value, you set
+a *YAML* list.
+
+For example, to set two paths as origins, you would write a YAML list in the config file:
 
 	origins:
 	- /path/value
 	- /path/other
+
+All available options for a plan can be consulted by calling the script using the
+`--list-opts` flag. It will show each option, showing if its a list and its default value.
 
 ### Plan examples
 
@@ -196,36 +200,40 @@ and avoid re-configure each single machine when a change in the backup-policy it
 
 The complete list of arguments:
 
-		Usage: backup.py Usage: [options] [--plan plan] backup|rotate|test
+	Usage: backup.py Usage: [options] [--plan plan] backup|rotate|test
 
-		Options:
-		-h, --help            show this help message and exit
-		-p PLAN, --plan=PLAN  Backup plan definition.
-		-o ORIGINS, --origin=ORIGINS
-								Add location to backup.
-		-d DEST, --dest=DEST  Where to store the backup.
-		-m ROTATE_MAX, --max=ROTATE_MAX
-								Max number of backups stored. Default 10.
-		--host=ORIGIN_HOST    Host for origins if needed.
-		-g ORIGIN_MODULE, --module=ORIGIN_MODULE
-								Module for origins if needed.
-		-u ORIGIN_USER, --user=ORIGIN_USER
-								User for ssh origins if needed.
-		-e EXCLUDES, --exclude=EXCLUDES
-								Exclude patterns.
-		-s MAX_SIZE, --max-size=MAX_SIZE
-								Exclude big files. Default 500M.
-		-a RSYNC_ARGS, --rsync-args=RSYNC_ARGS
-								Extra args for rsync.
-		-l LOGFILE, --logfile=LOGFILE
-								Path to logfile to store log. Will log to stdout if
-								unset.
-		-j PRE_HOOK, --pre-hook=PRE_HOOK
-								Order to be called before backup.
-		-k POST_HOOK, --post-hook=POST_HOOK
-								Order to be called after the backup.
-		-v, --verbose         Verbosity. Default silent. -v (info) -vv (debug)
-
+	Options:
+	-h, --help            show this help message and exit
+	-p PLAN, --plan=PLAN  Backup plan definition.
+	-o ORIGINS, --origin=ORIGINS
+							Add location to backup. Can be called multiple times
+	-d DEST, --dest=DEST  Where to store the backup.
+	-m ROTATE_MAX, --max=ROTATE_MAX
+							Max number of backups stored. Default 10.
+	--host=ORIGIN_HOST    Host for origins if needed.
+	-g ORIGIN_MODULE, --module=ORIGIN_MODULE
+							Module for origins if needed.
+	-u ORIGIN_USER, --user=ORIGIN_USER
+							User for ssh origins if needed.
+	-e EXCLUDE, --exclude=EXCLUDE
+							Exclude patterns. Can be called multiple times
+	-s MAX_SIZE, --max-size=MAX_SIZE
+							Exclude big files. Default 500M.
+	-a RSYNC_ARGS, --rsync-args=RSYNC_ARGS
+							Extra args for rsync. Can be called multiple times
+	-l LOGFILE, --logfile=LOGFILE
+							Path to logfile to store log. Will log to stdout if
+							unset.
+	-j PRE_HOOK, --pre-hook=PRE_HOOK
+							Order to be called before backup.
+	--pre-hook-args       Pass to the pre_hook order the following arguments:
+							DEST_DIR, LOGFILE, ORIGINS+
+	-k POST_HOOK, --post-hook=POST_HOOK
+							Order to be called after the backup.
+	--post-hook-args      Pass to the post_hook order the following arguments:
+							DEST_DIR, LOGFILE, ORIGINS+
+	--list-opts           Lists recognized plan options and type.
+	-v, --verbose         Verbosity. Default silent. -v (info)  -vv (debug)
 
 ## Dependences:
 
