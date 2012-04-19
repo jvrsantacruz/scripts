@@ -318,12 +318,22 @@ if __name__ == "__main__":
     parser.add_option("-j", "--pre-hook", dest="pre_hook", action="store",
                       default="", help="Order to be called before backup.")
 
+    parser.add_option("", "--pre-hook-args", dest="pre_hook_args",
+                      action="store_true", default=False,
+                      help="Pass to the pre_hook order the following"
+                      " arguments: DEST_DIR," " LOGFILE, ORIGINS+")
+
     parser.add_option("-k", "--post-hook", dest="post_hook", action="store",
                       default="", help="Order to be called after the backup.")
 
-    parser.add_option("-v", "--verbose", dest="verbose",
-                      action="count", default=0,
-                      help="Verbosity. Default silent. -v (info) -vv (debug)")
+    parser.add_option("", "--post-hook-args", dest="post_hook_args",
+                      action="store_true", default=False, help="Pass to the"
+                      " post_hook order the following arguments: DEST_DIR,"
+                      " LOGFILE, ORIGINS+")
+
+    parser.add_option("-v", "--verbose", dest="verbose", action="count",
+                      default=0, help="Verbosity. Default silent. -v (info) "
+                      " -vv (debug)")
 
     parser.set_usage("%prog Usage: [options] [--plan plan] backup|rotate|test")
 
