@@ -90,8 +90,9 @@ def filter_copy_names(names):
 
 def format_exclude_args(excludes):
     """Generates command line exclude arguments for rsync"""
-    return [e for sl in zip(["--exclude"] * len(excludes), excludes)
-              for e in sl]
+    return [exclude for excludepair
+            in zip(["--exclude"] * len(excludes), excludes)
+            for exclude in excludepair]
 
 
 def reset_last_pointer(last, dest):
