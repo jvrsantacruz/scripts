@@ -18,14 +18,13 @@ import subprocess
 import logging
 import shutil
 
+from collections import Iterable
 from optparse import OptionParser
 
 _COPY_DATE_FMT_ = "%Y%m%d-%H%M"  # year month day - hour minute
 _WEEK_DATE_FMT_ = "week-%Y-%W"  # year - week of year
 _LOGGING_FMT_ = '%(asctime)s %(levelname)-8s %(message)s'
-_MULTIPLE_OPTIONS_ = ('origins', 'excludes', 'rsync_args')
-_SINGLE_OPTIONS_ = ('dest', 'origin_host', 'origin_module', 'origin_user',
-                    'rotate_max', 'logfile', 'verbose')
+_ACTIONS_ = ("backup", "rotate", "test")
 
 
 def error(msg, is_exit=True):
@@ -130,16 +129,12 @@ def read_config(path):
             logging.error("Error parsing config file <%s>: %s" % (path, e))
             return None
 
-    # Set parameters with multiple values
-    for arg, argval in [(arg, plan.get(arg)) for arg in _MULTIPLE_OPTIONS_]:
-        if argval is not None:
-            getattr(opts, arg).extend(argval)
-
-    # Get regular monovalue options from the plan.
-    # Command-line arguments have precedence, dont' override them.
-    unsetargs = filter(lambda arg: not getattr(opts, arg), _SINGLE_OPTIONS_)
-    for arg, argval in [(arg, plan.get(arg)) for arg in unsetargs]:
-        setattr(opts, arg, argval if argval is not None in plan else "")
+    # Read from plan all options with default value
+    for option in [opt for opt in opts.defaultopts if opt.dest in plan]:
+        if option.action == "append":
+            getattr(opts, option.dest).extend(plan[option.dest])
+        else:
+            setattr(opts, option.dest, plan[option.dest])
 
     # Add host and module/ssh info to origins if needed
     if opts.origin_host and opts.origin_module:
@@ -352,13 +347,15 @@ if __name__ == "__main__":
         parser.print_help()
         error("Action needed: backup|rotate|test")
 
-    if args[0] not in ("backup", "rotate", "test"):
-        parser.print_help()
-        error("Unknown action %s. It must be: backup|rotate|test" % args[0])
+    opts.action = args[0]
 
     opts.test = (args[0] == "test")
 
     read_config(opts.plan)
+
+    # Set opts.backup, opts.rotate and opts.test
+    for action in _ACTIONS_:
+        setattr(opts, action, action == opts.action)
 
     # If logfile or verbose has been obtained from config, reconfigure logging.
     if opts.logfile != opts.logfile_from_console\
