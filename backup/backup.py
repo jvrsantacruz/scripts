@@ -166,10 +166,7 @@ def backup(origins, dest):
     arguments.extend(format_exclude_args(opts.excludes))
 
     if opts.pre_hook:
-        logging.info("Calling pre-hook: %s" % opts.pre_hook)
-        retval = subprocess.call([opts.pre_hook, opts.dest, opts.logfile] +
-                                 origins)
-        logging.info("post-hook finished with return value: %i" % retval)
+        hookcall("pre_hook", opts.dest, opts.logfile, origins)
 
     logging.info("Starting backup for %s to %s"
                  % (" ".join(origins), copy_dir))
@@ -194,10 +191,7 @@ def backup(origins, dest):
             reset_last_pointer(last, copy_dir)
 
     if opts.post_hook:
-        logging.info("Calling post-hook: %s" % opts.post_hook)
-        retval = subprocess.call([opts.post_hook, opts.dest,
-                                  opts.logfile, retval] + opts.origins)
-        logging.info("post-hook finished with return value: %i" % retval)
+        hookcall("post_hook", opts.dest, opts.logfile, retval, origins)
 
 
 def rotate(dest, max_copies):
