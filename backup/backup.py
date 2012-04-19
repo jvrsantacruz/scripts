@@ -44,11 +44,6 @@ def get_copy_week(copy):
     return time.strftime(_WEEK_DATE_FMT_, time.strptime(copy, _COPY_DATE_FMT_))
 
 
-def get_empty_plan():
-    "Returns a basic empty plan"
-    return {"origins": [], "dest": "", "rotate_max": 10}
-
-
 def get_ssh_origins(user, host, origins):
     "Formats each copy target for ssh protocol access"
     return ["%s@%s:%s" % (user, host, origin) for origin in origins]
