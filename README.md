@@ -9,7 +9,7 @@ indications about its implementation.
 
 ## What they do?
 
-This is a short description list for each script.
+This is a short description list of each script.
 
 - **backup**: Simple incremental `time-machine`-like backup scheme, based in hard-linking. 
 - **filediff**: Calculate differences between file trees by finding the exclusive files under each one by inode.

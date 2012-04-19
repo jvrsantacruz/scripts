@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
 """
-
-Javier Santacruz 16/07/2011
-
 Backup script, rsync based.
 Creates a backup scheme where each backup is a standalone copy of its contents.
 Copies shares hard links, saving lots of space.
 Reads config data from yaml files.
+
+Copyright © 2012 Javier Santacruz. All Rights Reserved.
 """
 
 import os
@@ -51,8 +50,6 @@ def get_ssh_origins(user, host, origins):
 def get_rsync_origins(module, host, origins):
     "Formats each copy target for rsync protocol access"
     return ["%s::%s/%s" % (host, module, origin) for origin in origins]
-
-
 
 
 def hookcall(hookname, *extras):
@@ -159,7 +156,7 @@ def list_avail_plan_opts():
 
 
 def backup(origins, dest):
-    """Performs the backup from origins to dest using options"""
+    "Performs the backup from origins to dest using options"
     copy_name = get_copy_date()  # Name for the copy
     copy_dir = os.path.join(dest, copy_name)  # Where to store
     last = os.path.join(dest, "last")  # last copy pointer
@@ -273,47 +270,39 @@ def main():
 if __name__ == "__main__":
     parser = OptionParser()
 
-    parser.add_option("-p", "--plan", dest="plan",
-                      action="store", default="",
+    parser.add_option("-p", "--plan", dest="plan", action="store", default="",
                       help="Backup plan definition.")
 
-    parser.add_option("-o", "--origin", dest="origins",
-                      action="append", default=[],
-                      help="Add location to backup."
-                      " Can be called multiple times")
+    parser.add_option("-o", "--origin", dest="origins", action="append",
+                      default=[], help="Add location to backup. Can be called"
+                      " multiple times")
 
-    parser.add_option("-d", "--dest", dest="dest",
-                      action="store", default="",
-                          help="Where to store the backup.")
+    parser.add_option("-d", "--dest", dest="dest", action="store", default="",
+                      help="Where to store the backup.")
 
-    parser.add_option("-m", "--max", dest="rotate_max",
-                      action="store", default=10, type="int",
-                      help="Max number of backups stored. Default 10.")
+    parser.add_option("-m", "--max", dest="rotate_max", action="store",
+                      default=10, type="int", help="Max number of backups"
+                      " stored. Default 10.")
 
-    parser.add_option("", "--host", dest="origin_host",
-                      action="store", default="",
-                      help="Host for origins if needed.")
+    parser.add_option("", "--host", dest="origin_host", action="store",
+                      default="", help="Host for origins if needed.")
 
-    parser.add_option("-g", "--module", dest="origin_module",
-                      action="store", default="",
-                      help="Module for origins if needed.")
+    parser.add_option("-g", "--module", dest="origin_module", action="store",
+                      default="", help="Module for origins if needed.")
 
-    parser.add_option("-u", "--user", dest="origin_user",
-                      action="store", default="",
-                      help="User for ssh origins if needed.")
+    parser.add_option("-u", "--user", dest="origin_user", action="store",
+                      default="", help="User for ssh origins if needed.")
 
-    parser.add_option("-e", "--exclude", dest="excludes",
-                      action="append", default=[],
-                      help="Exclude patterns. Can be called multiple times")
+    parser.add_option("-e", "--exclude", dest="exclude", action="append",
+                      default=[], help="Exclude patterns. Can be called"
+                      " multiple times")
 
-    parser.add_option("-s", "--max-size", dest="max_size",
-                      action="store", default="500M",
-                      help="Exclude big files. Default 500M.")
+    parser.add_option("-s", "--max-size", dest="max_size", action="store",
+                      default="500M", help="Exclude big files. Default 500M.")
 
-    parser.add_option("-a", "--rsync-args", dest="rsync_args",
-                      action="append", default=[],
-                      help="Extra args for rsync."
-                      " Can be called multiple times")
+    parser.add_option("-a", "--rsync-args", dest="rsync_args", action="append",
+                      default=[], help="Extra args for rsync. Can be called"
+                      " multiple times")
 
     parser.add_option("-l", "--logfile", dest="logfile", action="store",
                       default="", help="Path to logfile to store log. Will log"
