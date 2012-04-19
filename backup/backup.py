@@ -333,6 +333,11 @@ if __name__ == "__main__":
 
     (opts, args) = parser.parse_args()
 
+    # Options that conserve its default value
+    # They haven't been set by the user in the command line
+    ffun = lambda o: o.dest is not None and getattr(opts, o.dest) == o.default
+    opts.defaultopts = filter(ffun, parser.option_list)
+
     opts.logfile_from_console = opts.logfile
     opts.verbose_from_console = opts.verbose
 
