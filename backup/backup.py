@@ -147,6 +147,16 @@ def read_config(path):
                                        opts.origins)
 
 
+def list_avail_plan_opts():
+    "Lists options that can be used in a plan file"
+    fmtstr = "{0}\t{1}\t{2}"
+    print "Option Name\tValue or list\tDefault value"
+    for op in parser.option_list:
+        optype = str(type(op.default))[7:-2]
+        opdef = "''" if op.default == "" else op.default
+        print fmtstr.format(op.dest, optype, opdef)
+
+
 def backup(origins, dest):
     """Performs the backup from origins to dest using options"""
     copy_name = get_copy_date()  # Name for the copy
@@ -321,6 +331,10 @@ if __name__ == "__main__":
                       " post_hook order the following arguments: DEST_DIR,"
                       " LOGFILE, ORIGINS+")
 
+    parser.add_option("", "--list-opts", dest="list_opts", action="store_true",
+                      default=False, help="Lists recognized plan options and"
+                      " type.")
+
     parser.add_option("-v", "--verbose", dest="verbose", action="count",
                       default=0, help="Verbosity. Default silent. -v (info) "
                       " -vv (debug)")
@@ -342,6 +356,11 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging_levels[level],
                         format=_LOGGING_FMT_,
                        filename=opts.logfile)
+
+    # Direct options like --help and --list-opts finish here.
+    if opts.list_opts:
+        list_avail_plan_opts()
+        sys.exit(0)
 
     # Check arguments
     if len(args) != 1:
