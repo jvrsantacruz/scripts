@@ -61,6 +61,18 @@ def rsync(origins, dest, arguments):
     return subprocess.call(line)
 
 
+def syscall(command, *arguments):
+    "Executes a system call and returns its execution return value"
+    cmd = [command]
+    for arg in arguments:
+        if not isinstance(arg, str) and isinstance(arg, Iterable):
+            cmd.extend(arg)
+        else:
+            cmd.append(arg)
+    logging.info("System call: {0}".format(" ".join(cmd)))
+    return subprocess.call(cmd)
+
+
 def filter_copy_names(names):
     """Returns only names that are valid copy directory names."""
     def get_name(name):
