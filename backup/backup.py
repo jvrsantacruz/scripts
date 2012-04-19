@@ -54,11 +54,17 @@ def get_rsync_origins(module, host, origins):
     return ["%s::%s/%s" % (host, module, origin) for origin in origins]
 
 
-def rsync(origins, dest, arguments):
-    "Executes rsync for origins to dest with the provided options."
-    line = ["rsync"] + arguments + origins + [dest]
-    logging.debug("Rsync call: %s " % " ".join(line))
-    return subprocess.call(line)
+
+
+def hookcall(hookname, *extras):
+    "Executes a hook call"
+    exename = getattr(opts, hookname)[0]
+    callargs = getattr(opts, hookname)[1:]
+    logging.info("Calling {0}".format(hookname))
+    if not getattr(opts, hookname + "_args"):
+        syscall(exename)
+    else:
+        syscall(exename, callargs)
 
 
 def syscall(command, *arguments):
@@ -169,7 +175,7 @@ def backup(origins, dest):
                  % (" ".join(origins), copy_dir))
 
     try:
-        retval = rsync(origins, copy_dir, arguments)
+        retval = syscall("rsync", origins, copy_dir, arguments)
     except KeyboardInterrupt:
         logging.info("Rsync cancelled by user.")
         retval = 20
@@ -353,7 +359,7 @@ if __name__ == "__main__":
                             format=_LOGGING_FMT_,
                             filename=opts.logfile)
 
-    if not opts.dest:
-        error("Destination -d/--dest is mandatory.")
+    opts.pre_hook = opts.pre_hook.split()
+    opts.post_hook = opts.post_hook.split()
 
     main()
