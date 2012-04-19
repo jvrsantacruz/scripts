@@ -102,15 +102,15 @@ def reset_last_pointer(last, dest):
     try:
         os.unlink(last)
     except OSError:
-        logging.debug("Couldn't unlink last pointer at %s" % last)
+        logging.debug("Couldn't unlink last pointer at {0}".format(last))
 
     try:
         os.symlink(dest, last)
     except OSError:
-        logging.warning("Couldn't link %s to last pointer at %s"
-                        % (dest, last))
+        logging.warning("Couldn't link {0} to last pointer at {1}"
+                        .format(dest, last))
     else:
-        logging.info("Linked %s last pointer to %s" % (dest, last))
+        logging.info("Linked {0} last pointer to {1}".format(dest, last))
 
 
 def read_config(path):
@@ -118,15 +118,16 @@ def read_config(path):
     with open(path, "r") as pfile:
         try:
             plan = yaml.load(pfile, Loader=yaml.Loader)
-        #except yaml.scanner.ScannerError, e:
         except yaml.error.YAMLError, e:
-            logging.error("Error parsing config file <%s>: %s" % (path, e))
+            logging.error("Error parsing config file <{0}>: {1}"
+                          .format(path, e))
             return
         else:
-            logging.info("Reading config from <%s>" % path)
+            logging.info("Reading config from <{0}>".format(path))
 
         if not isinstance(plan, dict):
-            logging.error("Error parsing config file <%s>: %s" % (path, e))
+            logging.error("Error parsing config file <{0}>: {1}"
+                          .format(path, e))
             return None
 
     # Read from plan all options with default value
@@ -174,8 +175,8 @@ def backup(origins, dest):
     if opts.pre_hook:
         hookcall("pre_hook", opts.dest, opts.logfile, origins)
 
-    logging.info("Starting backup for %s to %s"
-                 % (" ".join(origins), copy_dir))
+    logging.info("Starting backup for {0} to {0}"
+                 .format(" ".join(origins), copy_dir))
 
     try:
         retval = syscall("rsync", origins, copy_dir, arguments)
@@ -183,13 +184,13 @@ def backup(origins, dest):
         logging.info("Rsync cancelled by user.")
         retval = 20
 
-    if retval == 0 and not opts.test:
-        logging.info("Done. Copy successful at %s" % copy_dir)
-    elif opts.test:
+    if opts.test:
         logging.info("Done. Test copy finished. Rsync exited with code: %i." %
                      retval)
+    elif retval == 0:
+        logging.info("Done. Copy successful at %s" % copy_dir)
     else:
-        logging.error("Copy failed. Rsync exited with code: %i" % retval)
+        logging.error("Copy failed. Rsync returned code: {0}".format(retval))
 
     # Make new last pointer whether successful or a new dir was created.
     if not opts.test:
@@ -204,16 +205,16 @@ def rotate(dest, max_copies):
     """Stores old copies into weekly directories"""
     copies = filter_copy_names(os.listdir(dest))
 
-    logging.info("Found %i of max %i copies in %s"
-                 % (len(copies), max_copies, dest))
-    logging.debug("Copies to rotate: %s" % " ".join(copies))
+    logging.info("Found {0} of max {1} copies in {2}"
+                 .format(len(copies), max_copies, dest))
+    logging.debug("Copies to rotate: {0}".format(" ".join(copies)))
 
     if len(copies) < max_copies:
-        logging.info("Not enough copies (%d) to perform rotation (%d needed)."\
-                     % (len(copies), max_copies))
+        logging.info("Not enough copies ({0}) to perform rotation ({1} needed)"
+                     .format(len(copies), max_copies))
         return
 
-    logging.info("Performing rotation at %s" % dest)
+    logging.info("Performing rotation at {0}".format(dest))
 
     # lexicographical sort makes most recent copy to be the last one
     copies.sort()
@@ -233,35 +234,38 @@ def rotate(dest, max_copies):
             except OSError:
                 pass
             else:
-                logging.info("Created week_dir %s" % week_dir)
+                logging.info("Created week_dir {0}".format(week_dir))
                 n_weeks += 1
 
         try:
             shutil.move(copy_dir, week_dir)
         except shutil.Error, e:
-            logging.error("Couln't copy to week dir when rotating: %s" % e)
+            logging.error("Couln't copy to week dir when rotating: {0}"
+                          .format(e))
         else:
-            logging.debug("Moving %s to %s" % (copy_dir, week_dir))
+            logging.debug("Moving {0} to {1}".format(copy_dir, week_dir))
             n_moves += 1
 
     if last_copy:
         last_pointer = os.path.join(dest, "last")
         reset_last_pointer(last_pointer, last_copy)
 
-    logging.info("Rotation performed. %i copies moved. %i dirs created." %
-                 (n_moves, n_weeks))
+    logging.info("Rotation performed. {0} copies moved. {1} dirs created."
+                 .format(n_moves, n_weeks))
 
 
 def main():
-    action = args[0]
+    if not opts.dest:
+        error("Destination -d/--dest is mandatory.")
 
-    if action == "backup":
-        if not opts.origins:
-            error("Action [backup] needs origins.")
+    if not opts.origins and (opts.backup or opts.test):
+        error("Actions (backup, test) needs at least one origin directory.")
+
+    if opts.backup:
         backup(opts.origins, opts.dest)
-    elif action == "rotate":
+    elif opts.rotate:
         rotate(opts.dest, opts.rotate_max)
-    elif action == "test":
+    elif opts.test:
         opts.rsync_args.append("--dry-run")
         backup(opts.origins, opts.dest)
 
@@ -369,7 +373,9 @@ if __name__ == "__main__":
 
     opts.action = args[0]
 
-    opts.test = (args[0] == "test")
+    if opts.action not in _ACTIONS_:
+        parser.print_help()
+        error("Unknown action %s. Actions: backup|rotate|test" % opts.action)
 
     read_config(opts.plan)
 
