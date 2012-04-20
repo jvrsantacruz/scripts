@@ -6,22 +6,21 @@ One full snapshot per backup, only changes are stored, the rest is hard-linked.
 
 ### The perfect backup
 
-The perfect backup plan would save absolutely everything each time it's called. One complete
-snapshot each time.
-This way, accessing to old versions and restoring them would be completely straightforward.
-__Sadly, this is unpractical__. You would harvest your disk and run out of space very soon.
+The perfect backup plan would save absolutely everything each time. One complete snapshot per
+backup. __Sadly, this is unpractical__. it would harvest your disk and run out of space very soon.
 
 ### The almost-perfect backup
 
-So we just have grown smarter and found a way to do it without making your disk explode.
-We copy everything at the first backup, and the next time, only changes are copied.
-But just the changes are not a full image! So the old unchanged files are hard-linked, making them
-appear in the new backup as if they were copied as well.b But without taking twice the space. :)
+So we just have grown smarter and found a way to do it without making your disk explode. The
+scripts copies everything at the first backup, and next time, it will only store the changes. I
+know, just the changes aren't a full image! To make it appear as a full backup, old unchanged files
+are reused and hard-linked, making them
+appear in the new backup as if they were copied as well. Without taking twice the space. :)
 This way each backup directory looks like a full snapshot of the data at the point.
 
 Eg: Directories `day1` and `day2` are both apparently full backups. If you list them, all your
-files are there. All the files, *as they were at the time*. So all the files are there, but just
-the ones with different *inode* numbers are really taking place in disk, the others, are linked.
+files are there. All the files, *as they were at the time*. But just the ones with different
+*inode* numbers are really taking place in disk, the others, are linked.
 
 	day1                        day2
 	|                            |
@@ -35,37 +34,24 @@ the ones with different *inode* numbers are really taking place in disk, the oth
 
 ## How to use it?
 
-The script receives one or more origin directories (where the data is), and a destination directory
-(where it shall be saved) and some options. Optionally, a config file with a backup plan can also
-be provided.
+The script needs to know where to get the data, and where to save it: 
 
-Minimal basic data to make the script work:
-
-1. Origin directories
-2. Destination directory
+1. Directories/Files to save (*origins*)
+2. Directory to store the data (*destination*)
 3. Action (backup, rotate, test)
 
 `python backup.py --origin /home/fulano --origin /home/mengano --dest /media/usb-disk backup`
 
-As it's `rsync` based, it is not necessary for either origins or destination to be local. You can
-mix and chose to *push* your backup from your machine to a safer place, *pull* it from a host and
-store it locally or both, get it from a remote machine and store it on another.
+As it's `rsync` based, it is not necessary for origins to be local directories. You can
+mix and chose to *pull* the data from other machine to a local safer place.
 
 You can provide all the options on the command-line, but a more reasonable way to use the script is
-to write a backup plan.
-A plan is a named backup task. It defines origins, destination and options in the friendly YAML
-format, and this way, only the plan file has to be passed to the program.
+to write a backup plan. A plan is a named backup task. It defines origins, destination and options
+in the friendly YAML format, and this way, only the plan file has to be passed to the program.
 
 `python backup.py --plan backup-home.yaml backup`
 
 See more about this in the *Plan* section.
-
-### Paths
-
-- Origin paths can be relative to the config file, if its present. They will be relative to the script otherwise.
-- Destination will be redirected straight to rsync so it can be anything that rsync understands.
-  Have in account that if rsync prompts asking password for ssh, it will stop the script when
-  running from cron.
 
 ## Actions
 
@@ -79,22 +65,13 @@ Usually rotate takes an option, which indicates how many backups it should be un
 to weekly directories.
 Tests relies on the rsync option `--dry-run` so connection, logging and net data transfer will be also tested.
 
-## The drawbacks
+### Paths
 
-There's almost no inconvenience in this system except for the meta-data and directory space bloat
-when performing really small backups (with delta changes of bytes) and dense directory trees.
+- Origin paths can be relative to the config file, if its present. They will be relative to the script otherwise.
+- Paths will be redirected straight to rsync so it can be anything that rsync understands.
+  Have in account that if rsync prompts asking password for ssh, it will stop the script when
+  running from cron.
 
-1. You cannot hard-link directory entries, so they'll have to be re-created each time, and that
-will be some extra megabytes per backup on the long run.
-
-2. If you have to replicate a whole image of your disk by hard-linking files one-by-one, it can
-take some time after each one of them has been consulted and linked when you have a very high
-number of files.
-
-Backing up really-freaking-dense directory trees or tons of tiny files may result in a lot of extra
-space (compared to the real data size) being used just in structure and meta-data. This doesn't
-make this backup system bad, just keep in mind that each time a backup is made, even if only few
-bytes are change, it could end-up in 15Mb of new directories.
 
 ## The Plan file
 
@@ -128,29 +105,8 @@ also set some options in the plan, we exclude certain patterns in the paths bein
 	- ".dropbox"
 	- "*.cache"
 
-A very usual disposition is to send your backup to a remote server or a NAS. This can be easily
-done by adding *ssh* information for the *dest* directory, the server ip and the login user. The
-existence of this info will make the script transform the path into a valid *ssh* url like
-`user@host:/path/to/dest`.
-
-	# Where to store the backups
-	dest: /media/external/bk
-	dest_host: 192.168.1.100
-	dest_user: admin
-
-	# Directories to be backed up
-	origins:
-	- /home/jvr/Dropbox
-	- /home/jvr/.config
-
-In this other example, we perform a similar task but backing up a remote host **the other way**.
-Instead of sending data from a machine and storing it on other server, we pull it from other
-*passive* computer and store it locally.
-
 This other plan it's what I use to backup my smartphone on a local network through ssh.
 The plan also sets some options `rotate_max`, `logfile` and the `verbose` level.
-
-	# ssh backup
 
 	dest: /home/jvr/backup/nexus
 
@@ -161,8 +117,7 @@ The plan also sets some options `rotate_max`, `logfile` and the `verbose` level.
 	origin_user: root
 	origin_host: 192.168.1.11
 
-	rotation_max: 5
-	logfile: /home/arl/backup/nexus.log
+	logfile: /home/jvr/backup/nexus.log
 
 	# Change permissions on the copy and follow symlinks
 	rsync_args:
@@ -174,27 +129,30 @@ The plan also sets some options `rotate_max`, `logfile` and the `verbose` level.
 	- .thumbnails
 	- .image-cache
 
+We're using here the rsync's own protocol. This is a real set-up example to backup a *Windows 7*
+box running a [cwRsync][] server. This is cake when one's have to backup lots of different hosts
+and avoid re-configure each single machine when a change in the backup-policy its made.
+
 The `rsync_args` option should also draw your attention, it takes options for rsync that are sent
 straight to the command-line order; This is very important when backing up certain file-systems or
 when you want to override some option set by default by the script with a `-no-OPT` rsync option.
 
-	origins:
-	- /home/fulano
-	- /home/mengano
+## Teorical drawbacks
 
-	dest: /var/backup
+There's almost no inconvenience in this system except for the directory space bloat, which can be
+significant when performing really small backups (with delta changes of bytes) and dense directory
+trees. Big changing files should also be avoided. Main inconveniences found in this system:
 
-	origin_host: 192.168.1.2
-	origin_user: user
-	origin_module: user_host
+1. You cannot hard-link directory entries, so they'll have to be re-created each time a backup is
+made. This means some extra megabytes per backup taken for directories, even if there is no changes
+in data between copies.
 
-	excludes:
-	- "*music*"
-	- "*video*"
+2. If you have to replicate a whole image of your disk by hard-linking files one-by-one, it can
+take some time before each one of them has been consulted and linked when you have a very high
+number of files.
 
-We're using here the rsync's own protocol. This is a real set-up example to backup a *Windows 7*
-box running a [cwRsync][] server. This is cake when one's have to backup lots of different hosts
-and avoid re-configure each single machine when a change in the backup-policy its made.
+3. Changing big files are evil. A big file constantly changing means a big file being copied one
+time and another, and can represent a big space problem.
 
 ## Options
 
