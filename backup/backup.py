@@ -338,6 +338,9 @@ if __name__ == "__main__":
                       default=1, help="Verbosity. Default warnings. -v (info) "
                       " -vv (debug)")
 
+    parser.add_option("-q", "--quiet", dest="quiet", action="store_true",
+                      default=False, help="Verbosity. Dont log warnings")
+
     parser.set_usage("%prog Usage: [options] [--plan plan] backup|rotate|test")
 
     (opts, args) = parser.parse_args()
