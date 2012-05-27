@@ -34,12 +34,12 @@ def error(msg, is_exit=True):
 
 
 def get_copy_date():
-    "Returns date in the script format"
+    "Returns the current date in the script format"
     return time.strftime(_COPY_DATE_FMT_)
 
 
 def get_copy_week(copy):
-    "Returns the week date in the script format"
+    "Returns the week date in the script format for a given copy date"
     return time.strftime(_WEEK_DATE_FMT_, time.strptime(copy, _COPY_DATE_FMT_))
 
 
