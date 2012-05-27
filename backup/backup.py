@@ -249,6 +249,41 @@ def hashfile(fpath):
     return hexdigest
 
 
+def delete_paths(fpaths):
+    "Unlinks each path and returns a list of paths successfully removed"
+    def __delete(fpath):
+        try:
+            logging.info("Removing repeated file {0}...".format(fpath))
+            os.unlink(fpath)
+        except OSError, err:
+            logging.warning("Couldn't remove {0} when checking: {1}"
+                          .format(fpath, err))
+            return False
+        else:
+            return True
+
+    return filter(__delete, fpaths)
+
+
+def link_to_file(fpaths, master_path):
+    """Links each path to master and adds the path to master fileentry
+    returns the paths sucessfully linked"""
+    # Link it to the first one with the same data instead
+    def __link(fpath):
+        try:
+            logging.info("Linking {0} to {1}...".format(fpath, master_path))
+            os.link(master_path, fpath)
+        except OSError, err:
+            logging.warning("Couldn't link {0} to {1} when checking."
+                            " Caution! Some data might be lost!: {1}"
+                            .format(fpath, master_path, err))
+            return False
+        else:
+            return True
+
+    return filter(__link, fpaths)
+
+
 def backup(origins, dest):
     "Performs the backup from origins to dest using options"
     copy_name = get_copy_date()  # Name for the copy
