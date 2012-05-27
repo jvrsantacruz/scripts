@@ -101,6 +101,9 @@ def filter_date_names(names, dateformat):
     ['20120122-1533']
     """
     def get_name(name):
+        if len(name) != 13:
+            return False
+
         try:
             time.strptime(name, dateformat)
         except ValueError:
