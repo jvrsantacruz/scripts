@@ -372,13 +372,16 @@ if __name__ == "__main__":
     # Check arguments
     if len(args) != 1:
         parser.print_help()
-        error("Action needed: backup|rotate|test")
+        print
+        error("Action needed: {0}".format("|".join(_ACTIONS_)))
 
     opts.action = args[0]
 
     if opts.action not in _ACTIONS_:
         parser.print_help()
-        error("Unknown action %s. Actions: backup|rotate|test" % opts.action)
+        print
+        error("Unknown action {0}. Actions: {1}"
+              .format(opts.action, "|".join(_ACTIONS_)))
 
     read_config(opts.plan)
 
