@@ -89,14 +89,14 @@ def filter_copy_names(names):
 
 
 def format_exclude_args(excludes):
-    """Generates command line exclude arguments for rsync"""
+    "Generates command line exclude arguments for rsync"
     return [exclude for excludepair
             in zip(["--exclude"] * len(excludes), excludes)
             for exclude in excludepair]
 
 
 def reset_last_pointer(last, dest):
-    """Sets the last link to the las copy made"""
+    "Sets the last link to the las copy made"
     try:
         os.unlink(last)
     except OSError:
