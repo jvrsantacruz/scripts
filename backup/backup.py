@@ -24,7 +24,7 @@ from optparse import OptionParser
 _COPY_DATE_FMT_ = "%Y%m%d-%H%M"  # year month day - hour minute
 _WEEK_DATE_FMT_ = "week-%Y-%W"  # year - week of year
 _LOGGING_FMT_ = '%(asctime)s %(levelname)-8s %(message)s'
-_ACTIONS_ = ("backup", "rotate", "test")
+_ACTIONS_ = ("backup", "rotate", "test", "check")
 
 
 def error(msg, is_exit=True):
@@ -536,7 +536,8 @@ def main():
     elif opts.test:
         opts.rsync_args.append("--dry-run")
         backup(opts.origins, opts.dest)
-
+    elif opts.check:
+        check_copies(opts.dest)
 
 if __name__ == "__main__":
     parser = OptionParser()
@@ -598,6 +599,15 @@ if __name__ == "__main__":
     parser.add_option("", "--list-opts", dest="list_opts", action="store_true",
                       default=False, help="Lists recognized plan options and"
                       " type.")
+
+    parser.add_option("", "--repare", dest="repare", action="store_true",
+                      default=False, help="Regroup repeated files when "
+                      " checking to save space. Otherwise will just list them")
+
+    parser.add_option("", "--dynamic-checking", dest="dynamic_checking",
+                      action="store_true", default=False,
+                      help="Looks and reagroups repeated files as it goes, "
+                      "instead of waiting to have checked the whole of files")
 
     parser.add_option("-v", "--verbose", dest="verbose", action="count",
                       default=1, help="Verbosity. Default warnings. -v (info) "
