@@ -52,6 +52,21 @@ def get_rsync_origins(module, host, origins):
     return ["%s::%s/%s" % (host, module, origin) for origin in origins]
 
 
+def human_format(nbytes):
+    """ Convert byte sizes to a human readable unit.
+    Returns (size,unit)
+    size between 1 and 1023
+    unit in (B, KB, MB, GB, PB)
+    """
+    units = ('B', 'KB', 'MB', 'GB', 'PB')
+    exp = 0
+    while nbytes > 1023 and exp < len(units):
+        nbytes /= 1024.0
+        exp += 1
+
+    return nbytes, units[exp]
+
+
 def hookcall(hookname, *extras):
     "Executes a hook call"
     exename = getattr(opts, hookname)[0]
