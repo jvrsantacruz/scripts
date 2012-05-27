@@ -153,7 +153,7 @@ def read_config(path):
 def list_avail_plan_opts():
     "Lists options that can be used in a plan file"
     fmtstr = "{0}\t{1}\t{2}"
-    print "Option Name\tValue or list\tDefault value"
+    print fmtstr.format('Option Name', 'Value or list', 'Default value')
     for op in parser.option_list:
         optype = str(type(op.default))[7:-2]
         opdef = "''" if op.default == "" else op.default
@@ -187,12 +187,12 @@ def backup(origins, dest):
         retval = 20
 
     if opts.test:
-        logging.info("Done. Test copy finished. Rsync exited with code: %i." %
-                     retval)
+        logging.info("Done. Test copy finished. Rsync exited with code: {0}."
+                     .format(retval))
     elif retval == 0:
-        logging.info("Done. Copy successful at %s" % copy_dir)
+        logging.info("Done. Copy successful at {0}".format(copy_dir))
     else:
-        logging.error("Copy failed. Rsync returned code: {0}".format(retval))
+        logging.warning("Copy failed. Rsync returned code: {0}".format(retval))
 
     # Make new last pointer whether successful or a new dir was created.
     if not opts.test:
