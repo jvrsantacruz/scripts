@@ -127,8 +127,12 @@ def reset_last_pointer(last, dest):
         logging.info("Linked {0} last pointer to {1}".format(dest, last))
 
 
-def read_config(path):
-    """Reads a plan in yaml"""
+def open_config(path):
+    "Reads and returns a plan config file in yaml format"
+    if not path:
+        return None
+
+    plan = None
     with open(path, "r") as pfile:
         try:
             plan = yaml.load(pfile, Loader=yaml.Loader)
@@ -146,6 +150,15 @@ def read_config(path):
 
     return plan
 
+
+def read_config(path):
+    "Reads a plan in yaml"
+    if not path:
+        return
+
+    plan = open_config(path)
+    if plan is None:
+        return
 
     # Read from plan all options with default value
     for option in [opt for opt in opts.defaultopts if opt.dest in plan]:
