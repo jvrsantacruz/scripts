@@ -336,6 +336,35 @@ def unify_files(group):
     return list(deleted_inodes)
 
 
+def check_files_samesize(samesize_fentries, repare):
+    """Checks files of the same size and optionally unyfies them
+    Returns number of files removed, freed size (bytes)"""
+    # If there is more than one file with same size, check data
+    # grouping them together if they're identical, unifying them
+    groupbyhash = group_by_hash(samesize_fentries)
+    if not groupbyhash:
+        return
+
+    entrysize = groupbyhash[0][0][1]  # Get size from first group's first entry
+    fmtentrysize, unit = human_format(entrysize)
+    for group in groupbyhash:
+        logging.info("Same content in {0} different files of size {1}{2}:"
+                     .format(len(group), fmtentrysize, unit))
+        for fentry in group:
+            morethan5 = '...' if len(fentry[-1]) > 5 else ''
+            logging.info("\tinode: {0} link paths: {1}{2}"
+                         .format(fentry[0], fentry[-1][:5], morethan5))
+
+        nremoved = 0
+        if repare:
+            logging.info("Unifying {0} files to one".format(len(group)))
+            nremoved = len(unify_files(group))
+            fmtentrysize = entrysize * nremoved
+            fmtentrysize, unit = human_format(fmtentrysize)
+            logging.info("{0} files unified freeing {1}{2}"
+                         .format(nremoved, fmtentrysize, unit))
+
+
 def backup(origins, dest):
     "Performs the backup from origins to dest using options"
     copy_name = get_copy_date()  # Name for the copy
