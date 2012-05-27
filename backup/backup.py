@@ -16,6 +16,7 @@ import time
 import subprocess
 import logging
 import shutil
+import hashlib
 
 from collections import Iterable
 from optparse import OptionParser
@@ -225,6 +226,27 @@ def list_copies(dest):
                 filter_date_names(copydirs, _COPY_DATE_FMT_)]
     copydirs.extend(list_weekly(dest))
     return sorted(copydirs)
+
+
+def hashfile(fpath):
+    "Calculates the hash hex string for the data in the file in the given path"
+    sha1hash = hashlib.sha1()
+    hexdigest = ''
+    try:
+        fhashfile = open(fpath, 'rb')
+    except IOError:
+        logging.warning("Couldn't open {0} for hashing".format(fpath))
+    else:
+        block = fhashfile.read(524288)  # Blocks of 512KB
+        while block:
+            sha1hash.update(block)
+            block = fhashfile.read(524288)
+
+        hexdigest = sha1hash.hexdigest()
+    finally:
+        fhashfile.close()
+
+    return hexdigest
 
 
 def backup(origins, dest):
