@@ -18,7 +18,7 @@ import logging
 import shutil
 import hashlib
 
-from collections import Iterable
+from collections import Iterable, defaultdict
 from optparse import OptionParser
 
 _COPY_DATE_FMT_ = "%Y%m%d-%H%M"  # year month day - hour minute
@@ -363,6 +363,67 @@ def check_files_samesize(samesize_fentries, repare):
             fmtentrysize, unit = human_format(fmtentrysize)
             logging.info("{0} files unified freeing {1}{2}"
                          .format(nremoved, fmtentrysize, unit))
+
+
+def check_copies(dest):
+    """
+    Checks existent backups and solves data replication.
+    Data replication is caused by files with the same contents, which for some
+    reason, has been copied twice.
+    """
+    copydirs = list_copies(dest)
+
+    def allpaths(root):
+        "All files generator. root: a,b,c => ['root/a', 'root/b', 'root/c']"
+        for root, dirs, files in os.walk(root):
+            for filename in files:
+                yield os.path.join(root, filename)
+
+    # Store paths for later checking
+    byinode = {}   # Store a file entry [inode, size, hash, paths]
+    bysize = {}    # Relates file entries with same size
+
+    for ndir, copydir in enumerate(copydirs):
+        logging.info("Checking copy directory {0}/{1}: {2}"
+                     .format(ndir + 1, len(copydirs), copydir))
+        for fpath in allpaths(copydir):
+            try:
+                stat = os.stat(fpath)
+            except OSError, err:
+                logging.warning("Couldn't stat file {0}: {1}"
+                                .format(fpath, err))
+                continue
+
+            inode, size = stat.st_ino, stat.st_size
+
+            # Save it by inode
+            fileentry = byinode.get(inode)
+            if fileentry is None:
+                fileentry = [inode, size, '', [fpath]]
+                byinode[inode] = fileentry
+            else:
+                fileentry[-1].append(fpath)
+
+            # If there is other files of the same size
+            # they're perfect candidates to be indeed the same file
+            # So we hash them, and if they're effectively identical,
+            # link all paths to the most linked and remove the rest.
+            entriesbysize = bysize.get(size)
+            if entriesbysize is None:
+                bysize[size] = {inode: fileentry}
+            elif inode not in entriesbysize:
+                entriesbysize[inode] = fileentry
+
+                # Perform the checking as we go if dynamic_checking
+                if opts.dynamic_checking:
+                    check_files_samesize(entriesbysize.values(), opts.repare)
+
+        logging.info("Found {0} different files in total".format(len(byinode)))
+
+    # Check at the end if it is only repare and not dynamic_checking
+    if not opts.dynamic_checking:
+        for fentries in [fen for fen in bysize.values() if len(fen) > 1]:
+            check_files_samesize(fentries.values(), opts.repare)
 
 
 def backup(origins, dest):
