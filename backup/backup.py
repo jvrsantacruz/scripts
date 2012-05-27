@@ -115,7 +115,10 @@ def filter_date_names(names, dateformat):
 
 
 def format_exclude_args(excludes):
-    "Generates command line exclude arguments for rsync"
+    """Generates command line exclude arguments for rsync
+    >> format_exclude_args('/cache', '.svn')
+    ['--exclude', '/cache', '--exclude', '.svn']
+    """
     return [exclude for excludepair
             in zip(["--exclude"] * len(excludes), excludes)
             for exclude in excludepair]
