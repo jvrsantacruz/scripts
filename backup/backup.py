@@ -335,7 +335,7 @@ if __name__ == "__main__":
                       " type.")
 
     parser.add_option("-v", "--verbose", dest="verbose", action="count",
-                      default=0, help="Verbosity. Default silent. -v (info) "
+                      default=1, help="Verbosity. Default warnings. -v (info) "
                       " -vv (debug)")
 
     parser.set_usage("%prog Usage: [options] [--plan plan] backup|rotate|test")
@@ -347,11 +347,16 @@ if __name__ == "__main__":
     ffun = lambda o: o.dest is not None and getattr(opts, o.dest) == o.default
     opts.defaultopts = filter(ffun, parser.option_list)
 
+    # store the values taken from the console
     opts.logfile_from_console = opts.logfile
     opts.verbose_from_console = opts.verbose
 
-    logging_levels = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
-    level = opts.verbose if opts.verbose < 3 else 2
+    if opts.quiet:
+        opts.verbose = 0
+
+    logging_levels = {0: logging.ERROR, 1: logging.WARNING,
+                      2: logging.INFO, 3: logging.DEBUG}
+    level = opts.verbose if opts.verbose < 4 else 3
     logging.basicConfig(level=logging_levels[level],
                         format=_LOGGING_FMT_,
                        filename=opts.logfile)
