@@ -44,7 +44,10 @@ def get_copy_week(copy):
 
 
 def get_ssh_origins(user, host, origins):
-    "Formats each copy target for ssh protocol access"
+    """Formats each copy target for ssh protocol access
+    >>> get_ssh_origins('user', '192.168.1.1', ['/usr/bin', '/opt'])
+    ['user@192.168.1.1:/usr/bin', 'user@192.168.1.1:/opt']
+    """
     return ["%s@%s:%s" % (user, host, origin) for origin in origins]
 
 
