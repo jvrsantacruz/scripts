@@ -188,6 +188,45 @@ def list_avail_plan_opts():
         print fmtstr.format(op.dest, optype, opdef)
 
 
+def list_weekly(dest):
+    """Finds weekly directories in dest
+    returns a list with the copy directories within dest. Oldest first
+    """
+
+    weekdirs = []
+    copydirs = []
+
+    try:
+        weekdirs = os.listdir(dest)
+    except OSError, err:
+        logging.error("Couldn't list directory {0}: {1}".format(dest, err))
+        weekdirs = []
+
+    for week in sorted(filter_date_names(weekdirs, _WEEK_DATE_FMT_)):
+        copydirs.extend([os.path.join(dest, week, name) for name in
+                    filter_date_names(copydirs, _COPY_DATE_FMT_)])
+
+    return sorted(copydirs)
+
+
+def list_copies(dest):
+    """List all existent copies in dir and weekly subdirs.
+    returns a list with the copy directories within dest. Oldest first
+    """
+    copydirs = []
+
+    try:
+        copydirs = os.listdir(dest)
+    except OSError, err:
+        logging.error("Couldn't list directory {0}: {1}".format(dest, err))
+        copydirs = []
+
+    copydirs = [os.path.join(dest, cdir) for cdir in
+                filter_date_names(copydirs, _COPY_DATE_FMT_)]
+    copydirs.extend(list_weekly(dest))
+    return sorted(copydirs)
+
+
 def backup(origins, dest):
     "Performs the backup from origins to dest using options"
     copy_name = get_copy_date()  # Name for the copy
