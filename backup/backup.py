@@ -284,6 +284,30 @@ def link_to_file(fpaths, master_path):
     return filter(__link, fpaths)
 
 
+def group_by_hash(fileentries):
+    "Returns a list of list containing fileentries with the same hash"
+    # Calculate all file hashes
+    for fentry in fileentries:
+        if not fentry[2]:  # Check fentry hash
+            # Warn the user if the hashing its going to take some time
+            if fentry[1] > 1024 ** 3:
+                size, unit = human_format(fentry[1])
+                logging.info("Hashing big file of size {0:.2f}{1}: {2}"
+                             .format(size, unit, fentry[-1][0]))
+            fentry[2] = hashfile(fentry[-1][0])  # Get first path
+
+    # Only entries with hash (hash, fileentry)
+    fileentries = [(fe[2], fe) for fe in fileentries if fe[2]]
+
+    # Group by hash
+    groups = defaultdict(list)
+    for fhash, fentry in fileentries:
+        groups[fhash].append(fentry)
+
+    # Only groups with coincidences
+    return filter(lambda g: len(g) > 1, groups.values())
+
+
 def unify_files(group):
     """Takes a list of file entries and links them all to the same inode.
     Modifies the chosen inode file entry to add the new linked paths.
