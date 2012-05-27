@@ -284,6 +284,34 @@ def link_to_file(fpaths, master_path):
     return filter(__link, fpaths)
 
 
+def unify_files(group):
+    """Takes a list of file entries and links them all to the same inode.
+    Modifies the chosen inode file entry to add the new linked paths.
+    Returns a list of deleted inodes"""
+    deleted_inodes = set()  # deleted inodes
+
+    # Chose the most linked fentry to link the rest to it
+    firstentry = max(group, key=lambda g: len(g[-1]))
+    group.remove(firstentry)
+    firstpath = firstentry[-1][0]
+
+    # For each fentry in the group,
+    # 1. Remove all file links
+    # 2. Link them back to the master fentry in group
+    # 3. Save path on master and remove it from the fentry
+    # 4. If all links for a given fentry were unlinked and linked,
+    #    the doesn't exists any longer, store the deleted inode
+    for fentry in group:
+        deleted_paths = delete_paths(fentry[-1])
+        deleted_paths = link_to_file(deleted_paths, firstpath)
+        fentry[-1][:] = list(set(fentry[-1]) - set(deleted_paths))
+        firstentry[-1].extend(deleted_paths)
+        if not fentry[-1]:
+            deleted_inodes.add(fentry[0])  # Add inode if all links were remvd
+
+    return list(deleted_inodes)
+
+
 def backup(origins, dest):
     "Performs the backup from origins to dest using options"
     copy_name = get_copy_date()  # Name for the copy
