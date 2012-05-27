@@ -90,11 +90,11 @@ def syscall(command, *arguments):
     return subprocess.call(cmd)
 
 
-def filter_copy_names(names):
-    """Returns only names that are valid copy directory names."""
+def filter_date_names(names, dateformat):
+    "Returns only names that are valid 'dateformat' names."
     def get_name(name):
         try:
-            time.strptime(name, _COPY_DATE_FMT_)
+            time.strptime(name, dateformat)
         except ValueError:
             return False
         else:
@@ -233,11 +233,10 @@ def backup(origins, dest):
 
 def rotate(dest, max_copies):
     """Stores old copies into weekly directories"""
-    copies = filter_copy_names(os.listdir(dest))
+    copies = filter_date_names(os.listdir(dest), _COPY_DATE_FMT_)
 
     logging.info("Found {0} of max {1} copies in {2}"
                  .format(len(copies), max_copies, dest))
-    logging.debug("Copies to rotate: {0}".format(" ".join(copies)))
 
     if len(copies) < max_copies:
         logging.info("Not enough copies ({0}) to perform rotation ({1} needed)"
