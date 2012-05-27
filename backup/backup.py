@@ -95,7 +95,11 @@ def syscall(command, *arguments):
 
 
 def filter_date_names(names, dateformat):
-    "Returns only names that are valid 'dateformat' names."
+    """Returns only names that are valid 'dateformat' names.
+    >>> filter_date_names(['20120122-1533', 'wrong', '201222-1533'],\
+    _COPY_DATE_FMT_)
+    ['20120122-1533']
+    """
     def get_name(name):
         try:
             time.strptime(name, dateformat)
