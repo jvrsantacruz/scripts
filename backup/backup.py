@@ -99,14 +99,15 @@ def reset_last_pointer(last, dest):
     "Sets the last link to the las copy made"
     try:
         os.unlink(last)
-    except OSError:
-        logging.debug("Couldn't unlink last pointer at {0}".format(last))
+    except OSError, err:
+        logging.debug("Couldn't unlink last pointer at {0}: {1}"
+                      .format(last, err))
 
     try:
         os.symlink(dest, last)
-    except OSError:
-        logging.warning("Couldn't link {0} to last pointer at {1}"
-                        .format(dest, last))
+    except OSError, err:
+        logging.warning("Couldn't link {0} to last pointer at {1}: {2}"
+                        .format(dest, last, err))
     else:
         logging.info("Linked {0} last pointer to {1}".format(dest, last))
 
@@ -116,17 +117,20 @@ def read_config(path):
     with open(path, "r") as pfile:
         try:
             plan = yaml.load(pfile, Loader=yaml.Loader)
-        except yaml.error.YAMLError, e:
-            logging.error("Error parsing config file <{0}>: {1}"
-                          .format(path, e))
+        except yaml.error.YAMLError, err:
+            logging.error("Error parsing plan config file <{0}>: {1}"
+                          .format(path, err))
             return
         else:
             logging.info("Reading config from <{0}>".format(path))
 
-        if not isinstance(plan, dict):
-            logging.error("Error parsing config file <{0}>: {1}"
-                          .format(path, e))
-            return None
+    if not isinstance(plan, dict):
+        logging.error("Wrong format for plan config file <{0}>"
+                      .format(path))
+        return None
+
+    return plan
+
 
     # Read from plan all options with default value
     for option in [opt for opt in opts.defaultopts if opt.dest in plan]:
@@ -229,17 +233,18 @@ def rotate(dest, max_copies):
         if not os.path.exists(week_dir):
             try:
                 os.mkdir(week_dir)
-            except OSError:
-                pass
+            except OSError, err:
+                logging.error("Couldn't create week dir: {0}".format(err))
+                continue
             else:
                 logging.info("Created week_dir {0}".format(week_dir))
                 n_weeks += 1
 
         try:
             shutil.move(copy_dir, week_dir)
-        except shutil.Error, e:
+        except shutil.Error, err:
             logging.error("Couln't copy to week dir when rotating: {0}"
-                          .format(e))
+                          .format(err))
         else:
             logging.debug("Moving {0} to {1}".format(copy_dir, week_dir))
             n_moves += 1
