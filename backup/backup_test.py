@@ -1,9 +1,10 @@
 #!/bin/env python
 #-*- coding: utf-8 -*-
 
+import time
+import random
 import doctest
 import unittest
-import time
 import subprocess
 
 import backup
@@ -67,6 +68,16 @@ class TestFormattingFunctions(unittest.TestCase):
     def test_syscall_multiplearg(self):
         self.assertEqual(subprocess.call(['ls', '/home', '/opt']),
                         backup.syscall('ls', '/home', '/opt'))
+
+
+
+def newfile(path, content="", randcontent=False):
+    "Creates a new file with a given content"
+    if randcontent:  # content is a string filled with random numbers
+        content = str(random.randint(2 ** 1024, 2 ** 2048))
+
+    with open(path, 'w') as dfile:
+        dfile.write(content)
 
 
 if __name__ == "__main__":
