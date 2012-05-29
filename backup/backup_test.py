@@ -8,7 +8,6 @@ import random
 import doctest
 import unittest
 import subprocess
-import random
 
 import backup
 
@@ -57,8 +56,9 @@ class TestFormattingFunctions(unittest.TestCase):
                          backup.get_rsync_origins(self.module, self.host,
                                                   self.origins))
 
-    def test_filter_copy_names(self):
-        self.assertEqual(self.good_dates, backup.filter_copy_names(self.dates))
+    def test_filter_date_names(self):
+        self.assertEqual(self.good_dates, backup.filter_date_names(self.dates,
+                                                       backup._COPY_DATE_FMT_))
 
     def test_exclude_args(self):
         self.assertEqual(backup.format_exclude_args(self.origins),
@@ -220,6 +220,43 @@ class TestFileOperations(unittest.TestCase):
         current_inodes = list(find_inodes(self.basepath))
         self.assertEqual(len(current_inodes), self.n_files)
         self.assertTrue(len(set(current_inodes)), self.n_diff_files)
+
+
+class TestBackup(unittest.TestCase):
+    "Tests backup command"
+
+    def setUp(self):
+        """Creates a `copy` directory that holds certain files and a `backup`
+        dir to copy to"""
+        self.copy_path = './copy'
+        self.file_name = 'file.txt'
+        self.file_path = os.path.join(self.copy_path, self.file_name)
+        self.copy_inner_path = os.path.join(self.copy_path, 'inner')
+        self.file_inner_path = os.path.join(self.copy_inner_path, self.file_name)
+        self.backup_path = './backup'
+        self.backup_file_path = os.path.join(self.backup_path, self.file_path)
+        self.backup_file_inner_path = os.path.join(self.backup_path, self.file_inner_path)
+
+        os.mkdir(self.copy_path)
+        os.mkdir(self.copy_inner_path)
+        os.mkdir(self.backup_path)
+
+        newfile(self.file_path, randcontent=True)
+        newfile(self.file_inner_path, randcontent=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.copy_path)
+        shutil.rmtree(self.backup_path)
+
+    def test_backup(self):
+        "Tests basic backup"
+        date = backup.get_copy_date()
+        ret = subprocess.call(['./backup.py', '--origin', self.copy_path,
+                               '--dest', self.backup_path, 'backup'])
+        self.assertEqual(ret, 0)
+        self.assertEqual(len(list(find(self.backup_path, date))), 1)
+        self.assertEqual(len(list(find(self.backup_path, 'last'))), 1)
+        self.assertEqual(len(list(find(self.backup_path, self.file_name))), 2)
 
 
 if __name__ == "__main__":
