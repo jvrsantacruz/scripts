@@ -3,10 +3,12 @@
 
 import os
 import time
+import shutil
 import random
 import doctest
 import unittest
 import subprocess
+import random
 
 import backup
 
@@ -93,6 +95,85 @@ def find_inodes(root, name=None):
         for filename in files:
             if name is None or name == filename:
                 yield os.stat(os.path.join(dirname, filename))
+
+
+class TestFileOperations(unittest.TestCase):
+
+    @staticmethod
+    def get_copynames(n):
+        "Generator for n random valid copy names"
+        # Create 'copies'
+        stamp = time.time()
+        for hour in range(1, n + 1):
+            date = time.strftime(backup._COPY_DATE_FMT_, time.localtime(stamp))
+            stamp += 86400  # 1 more day
+            yield date
+
+    @staticmethod
+    def newfile(path, content="", randcontent=False):
+        "Creates a new file with a given content"
+        if randcontent:  # content is a string filled with random numbers
+            content = str(random.randint(2**1024, 2**2048))
+
+        with open(path, 'w') as dfile:
+            dfile.write(content)
+
+    def setUp(self):
+        """Create test directory enviroment
+        The tree contains three directories with files that range all posibilities.
+        File same-i: Same file (hard-linked) within the three directories.
+        File dif-i: Different file (inode) but same contents within the three directories.
+        File dif-i-content: Completely different file from all others. Unique.
+
+        test
+         |- 20120315-1422
+         |   |- same-i          3045  (content: 'hello')
+         |   |- dif-i           6777  (content: '11111..')
+         |   `- dif-i-content   8423  (content: '24324..')
+         |- 20120316-1422
+         |   |- same-i          3045  (content: 'hello')
+         |   |- dif-i           8797  (content: '11111..')
+         |   `- dif-i-content   4233  (content: "87534..')
+         `- 20120317-1422
+             |- same-i          3045  (content: 'hello')
+             |- dif-i           1234  (content: '11111..')
+             `- dif-i-content   6327  (content: '78123..')
+        """
+        self.bkpath = 'bk'
+        self.basepath = 'test'
+        self.copynames = list(self.get_copynames(3))
+        self.copypaths = [os.path.join(self.basepath, copy)
+                          for copy in self.copynames]
+        self.filenames = ['same-i', 'dif-i', 'dif-i-content']
+
+        os.mkdir(self.bkpath)
+
+        os.mkdir(self.basepath)
+        for i, path in enumerate(self.copypaths):
+            os.mkdir(path)
+
+            if i == 0:
+                # Three new files
+                for name in self.filenames:
+                    newfile(os.path.join(path, name), randcontent=True)
+
+            else:
+                # Unchanged file with same inode
+                os.link(os.path.join(self.copypaths[i - 1], 'same-i'),
+                        os.path.join(path, 'same-i'))
+                # Unchanged file with different inode
+                shutil.copy(os.path.join(self.copypaths[i - 1], 'dif-i'),
+                           os.path.join(path, 'dif-i'))
+                # Completely new file
+                newfile(os.path.join(path, 'dif-i-content'),
+                             randcontent=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.bkpath)
+        shutil.rmtree(self.basepath)
+
+    def test_empty(self):
+        pass
 
 
 if __name__ == "__main__":
