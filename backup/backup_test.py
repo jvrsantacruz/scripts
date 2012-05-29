@@ -1,6 +1,7 @@
 #!/bin/env python
 #-*- coding: utf-8 -*-
 
+import os
 import time
 import random
 import doctest
@@ -78,6 +79,13 @@ def newfile(path, content="", randcontent=False):
 
     with open(path, 'w') as dfile:
         dfile.write(content)
+
+
+def find(root, name):
+    "Returns paths ending in 'name' under root"
+    for dirname, dirs, files in os.walk(root):
+        if name in files + dirs:
+            yield os.path.join(dirname, name)
 
 
 if __name__ == "__main__":
