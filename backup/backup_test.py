@@ -175,8 +175,27 @@ class TestFileOperations(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.basepath)
 
-    def test_empty(self):
-        pass
+    def test_check(self):
+        "Tests check command's output"
+        output = subprocess.check_output(['./backup.py', '-v', '--dest',
+                                          self.basepath, 'check'])
+
+        # Check present files
+        prev_inodes = list(find_inodes(self.basepath))
+        self.assertEqual(len(prev_inodes), self.n_files)
+        self.assertEqual(len(set(prev_inodes)), self.n_inodes)
+
+        #self.assertTrue('Same content in {0} different files of size'
+        #                .format(self.n_similar_files) in output)
+
+        #for inode in self.copyinodes:
+        #    self.assertTrue('inode: {0}'.format(inode) in output)
+
+        # Check files after operation. Should remain intact.
+        current_inodes = list(find_inodes(self.basepath))
+        self.assertEqual(len(current_inodes), self.n_files)
+        self.assertEqual(len(set(current_inodes)), self.n_inodes)
+
 
 
 if __name__ == "__main__":
