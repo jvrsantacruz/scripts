@@ -139,24 +139,25 @@ class TestFileOperations(unittest.TestCase):
              |- dif-i           1234  (content: '11111..')
              `- dif-i-content   6327  (content: '78123..')
         """
-        self.bkpath = 'bk'
         self.basepath = 'test'
         self.copynames = list(self.get_copynames(3))
         self.copypaths = [os.path.join(self.basepath, copy)
                           for copy in self.copynames]
         self.filenames = ['same-i', 'dif-i', 'dif-i-content']
-
-        os.mkdir(self.bkpath)
+        self.n_inodes = 7
+        self.n_files = 9
+        self.n_similar_files = 4
+        self.n_diff_files = 5
 
         os.mkdir(self.basepath)
         for i, path in enumerate(self.copypaths):
             os.mkdir(path)
 
             if i == 0:
-                # Three new files
-                for name in self.filenames:
-                    newfile(os.path.join(path, name), randcontent=True)
-
+                newfile(os.path.join(path, 'same-i'), randcontent=True)
+                shutil.copy(os.path.join(path, 'same-i'),
+                            os.path.join(path, 'dif-i'))
+                newfile(os.path.join(path, 'dif-i-content'), randcontent=True)
             else:
                 # Unchanged file with same inode
                 os.link(os.path.join(self.copypaths[i - 1], 'same-i'),
@@ -168,8 +169,10 @@ class TestFileOperations(unittest.TestCase):
                 newfile(os.path.join(path, 'dif-i-content'),
                              randcontent=True)
 
+        self.copyinodes = list(find_inodes(self.basepath, 'dif-i')) +\
+                           list(find_inodes(self.basepath, 'same-i'))
+
     def tearDown(self):
-        shutil.rmtree(self.bkpath)
         shutil.rmtree(self.basepath)
 
     def test_empty(self):
