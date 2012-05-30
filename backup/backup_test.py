@@ -196,6 +196,30 @@ class TestFileOperations(unittest.TestCase):
         self.assertEqual(len(current_inodes), self.n_files)
         self.assertEqual(len(set(current_inodes)), self.n_inodes)
 
+    def test_check_repare(self):
+        "Tests check repare command's side effects"
+        prev_inodes = list(find_inodes(self.basepath))
+        self.assertEqual(len(prev_inodes), self.n_files)
+        self.assertEqual(len(set(prev_inodes)), self.n_inodes)
+
+        # Execute command
+        output = subprocess.check_output(['./backup.py', '--repare', '-v',
+                                          '--dest', self.basepath, 'check'])
+
+        # Check output
+        #self.assertTrue('Unifying {0} files to one'\
+        #        .format(self.n_similar_files) in output)
+        #self.assertEqual(output.count('Removing repeated file '),
+        #                   self.n_similar_files - 1)
+        #self.assertEqual(output.count('Linking '),
+        #                   self.n_similar_files - 1)
+        #self.assertTrue('{0} files unified'.format(self.n_similar_files - 1)
+        #                  in output)
+
+        # Check that similar files has been merged
+        current_inodes = list(find_inodes(self.basepath))
+        self.assertEqual(len(current_inodes), self.n_files)
+        self.assertTrue(len(set(current_inodes)), self.n_diff_files)
 
 
 if __name__ == "__main__":
