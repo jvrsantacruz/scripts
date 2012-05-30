@@ -71,7 +71,6 @@ class TestFormattingFunctions(unittest.TestCase):
                         backup.syscall('ls', '/home', '/opt'))
 
 
-
 def newfile(path, content="", randcontent=False):
     "Creates a new file with a given content"
     if randcontent:  # content is a string filled with random numbers
@@ -86,6 +85,14 @@ def find(root, name):
     for dirname, dirs, files in os.walk(root):
         if name in files + dirs:
             yield os.path.join(dirname, name)
+
+
+def find_inodes(root, name=None):
+    "Returns inodes for each file under root optionally ending in name"
+    for dirname, dirs, files, in os.walk(root):
+        for filename in files:
+            if name is None or name == filename:
+                yield os.stat(os.path.join(dirname, filename))
 
 
 if __name__ == "__main__":
