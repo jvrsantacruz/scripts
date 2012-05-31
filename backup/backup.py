@@ -392,10 +392,9 @@ def check_files_samesize(samesize_fentries, repare):
 
 
 def check_copies(dest):
-    """
-    Checks existent backups and solves data replication.
-    Data replication is caused by files with the same contents, which for some
-    reason, has been copied twice.
+    """Checks existent backups and solves data replication.  Data replication
+    is caused by files with the same contents, which for some reason, has been
+    copied twice.
     """
     copydirs = list_copies(dest)
 
@@ -496,7 +495,7 @@ def backup(origins, dest):
 
 
 def rotate(dest, max_copies):
-    """Stores old copies into weekly directories"""
+    "Stores old copies into weekly directories"
     copies = filter_date_names(os.listdir(dest), _COPY_DATE_FMT_)
 
     logging.info("Found {0} of max {1} copies in {2}"
