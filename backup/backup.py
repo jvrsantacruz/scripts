@@ -251,7 +251,11 @@ def list_copies(dest):
 
 
 def hashfile(fpath):
-    "Calculates the hash hex string for the data in the file in the given path"
+    """Calculates the hash string for the data in the file in the given path
+    >>> import subprocess as sp;
+    >>> hashfile('/etc/passwd') in sp.check_output(['sha1sum', '/etc/passwd'])
+    True
+    """
     sha1hash = hashlib.sha1()
     hexdigest = ''
     try:
