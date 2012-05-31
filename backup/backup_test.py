@@ -109,15 +109,6 @@ class TestFileOperations(unittest.TestCase):
             stamp += 86400  # 1 more day
             yield date
 
-    @staticmethod
-    def newfile(path, content="", randcontent=False):
-        "Creates a new file with a given content"
-        if randcontent:  # content is a string filled with random numbers
-            content = str(random.randint(2**1024, 2**2048))
-
-        with open(path, 'w') as dfile:
-            dfile.write(content)
-
     def setUp(self):
         """Create test directory enviroment
         The tree contains three directories with files that range all posibilities.
