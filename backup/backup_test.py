@@ -166,6 +166,29 @@ class TestFileOperations(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.basepath)
 
+
+    def test_rotate(self):
+        "Tests rotate command"
+        self.assertEqual(len(os.listdir(self.basepath)), 3)  # Three copy dirs
+
+        weekdirname = backup.get_copy_week(os.listdir(self.basepath)[0])
+        weekdirpath = os.path.join(self.basepath, weekdirname)
+        prev_inodes = len(list(find_inodes(self.basepath)))
+
+        # Execute former rotation
+        ret = subprocess.call(['./backup.py', '-vv', '--dest', self.basepath,
+                               '--max', '1', 'rotate'],
+                              stderr=subprocess.STDOUT)
+
+        post_inodes = len(list(find_inodes(weekdirpath)))
+
+        self.assertEqual(ret, 0)  # Program should exit normally
+        #self.assertTrue(os.path.lexists(os.path.realpath(os.path.join(self.basepath, 'last'))))
+        self.assertTrue(os.path.exists(weekdirpath))  # Week dir created
+        self.assertEqual(prev_inodes, post_inodes)  # Files must remain unchan
+        self.assertEqual(len(os.listdir(self.basepath)), 2)  # 1 copy, 1 week
+        self.assertEqual(len(os.listdir(weekdirpath)), 3)  # 2 copies in week
+
     def test_check(self):
         "Tests check command's output"
         output = subprocess.check_output(['./backup.py', '-v', '--dest',
