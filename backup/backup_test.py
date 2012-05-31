@@ -169,18 +169,19 @@ class TestFileOperations(unittest.TestCase):
     def test_check(self):
         "Tests check command's output"
         output = subprocess.check_output(['./backup.py', '-v', '--dest',
-                                          self.basepath, 'check'])
+                                          self.basepath, 'check'],
+                                         stderr=subprocess.STDOUT)
 
         # Check present files
         prev_inodes = list(find_inodes(self.basepath))
         self.assertEqual(len(prev_inodes), self.n_files)
         self.assertEqual(len(set(prev_inodes)), self.n_inodes)
 
-        #self.assertTrue('Same content in {0} different files of size'
-        #                .format(self.n_similar_files) in output)
+        self.assertTrue('Same content in {0} different files of size'
+                        .format(self.n_similar_files) in output)
 
-        #for inode in self.copyinodes:
-        #    self.assertTrue('inode: {0}'.format(inode) in output)
+        for inode in self.copyinodes:
+            self.assertTrue('inode: {0}'.format(inode) in output)
 
         # Check files after operation. Should remain intact.
         current_inodes = list(find_inodes(self.basepath))
@@ -195,17 +196,18 @@ class TestFileOperations(unittest.TestCase):
 
         # Execute command
         output = subprocess.check_output(['./backup.py', '--repare', '-v',
-                                          '--dest', self.basepath, 'check'])
+                                          '--dest', self.basepath, 'check'],
+                                        stderr=subprocess.STDOUT)
 
         # Check output
-        #self.assertTrue('Unifying {0} files to one'\
-        #        .format(self.n_similar_files) in output)
-        #self.assertEqual(output.count('Removing repeated file '),
-        #                   self.n_similar_files - 1)
-        #self.assertEqual(output.count('Linking '),
-        #                   self.n_similar_files - 1)
-        #self.assertTrue('{0} files unified'.format(self.n_similar_files - 1)
-        #                  in output)
+        self.assertTrue('Unifying {0} files to one'\
+                .format(self.n_similar_files) in output)
+        self.assertEqual(output.count('Removing repeated file '),
+                           self.n_similar_files - 1)
+        self.assertEqual(output.count('Linking '),
+                           self.n_similar_files - 1)
+        self.assertTrue('{0} files unified'.format(self.n_similar_files - 1)
+                          in output)
 
         # Check that similar files has been merged
         current_inodes = list(find_inodes(self.basepath))
