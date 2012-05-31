@@ -94,7 +94,7 @@ def find_inodes(root, name=None):
     for dirname, dirs, files, in os.walk(root):
         for filename in files:
             if name is None or name == filename:
-                yield os.stat(os.path.join(dirname, filename))
+                yield os.stat(os.path.join(dirname, filename)).st_ino
 
 
 class TestFileOperations(unittest.TestCase):
