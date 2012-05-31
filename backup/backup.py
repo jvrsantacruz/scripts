@@ -52,7 +52,10 @@ def get_ssh_origins(user, host, origins):
 
 
 def get_rsync_origins(module, host, origins):
-    "Formats each copy target for rsync protocol access"
+    """Formats each copy target for rsync protocol access
+    >>> get_rsync_origins('module', '192.168.1.1', ['/usr/bin', '/opt'])
+    ['192.168.1.1::module//usr/bin', '192.168.1.1::module//opt']
+    """
     return ["%s::%s/%s" % (host, module, origin) for origin in origins]
 
 
