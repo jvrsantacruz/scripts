@@ -64,10 +64,16 @@ def human_format(nbytes):
     Returns (size,unit)
     size between 1 and 1023
     unit in (B, KB, MB, GB, PB)
+    >>> human_format(1024)
+    (1.0, 'KiB')
+    >>> human_format(2 ** 20)
+    (1.0, 'MiB')
+    >>> human_format(2 ** 50)
+    (1024.0, 'PiB')
     """
-    units = ('B', 'KB', 'MB', 'GB', 'PB')
+    units = ('B', 'KiB', 'MiB', 'GiB', 'PiB')
     exp = 0
-    while nbytes > 1023 and exp < len(units):
+    while nbytes > 1023 and exp < len(units) - 1:
         nbytes /= 1024.0
         exp += 1
 
