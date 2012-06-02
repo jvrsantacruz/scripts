@@ -6,12 +6,11 @@ Syncs playcounts and ratings between banshee and clementine databases.
 Javier Santacruz 12/12/2011
 """
 
-import sqlite3
+import sys
 import time
 import shutil
-import sys
-import os
 import logging
+import sqlite3
 from optparse import OptionParser
 
 _LOGGING_FMT_ = '%(asctime)s %(levelname)-8s %(message)s'
