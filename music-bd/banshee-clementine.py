@@ -11,61 +11,10 @@ import time
 import shutil
 import logging
 import sqlite3
+from abc import ABCMeta
 from optparse import OptionParser
 
 _LOGGING_FMT_ = '%(asctime)s %(levelname)-8s %(message)s'
-
-_QUERIES_ = {
-    'banshee': {
-
-        'extract': """
-        SELECT CoreArtists.Name, CoreAlbums.Title, CoreTracks.Title,
-               CoreTracks.Rating, CoreTracks.PlayCount, CoreTracks.SkipCount
-        FROM CoreTracks
-        INNER JOIN CoreArtists ON CoreTracks.ArtistID = CoreArtists.ArtistID
-        INNER JOIN CoreAlbums ON CoreTracks.AlbumID = CoreAlbums.AlbumID
-
-        WHERE CoreTracks.Rating > 0
-        OR CoreTracks.PlayCount > 0
-        OR CoreTracks.SkipCount > 0
-        ORDER BY CoreArtists.Name,CoreAlbums.Title,CoreTracks.Title;
-        """,
-
-        'update': """
-        UPDATE CoreTracks
-        SET Rating = :rating, PlayCount = :play, SkipCount = :skip
-        WHERE CoreTracks.TrackID = (
-         SELECT CoreTracks.TrackID
-         FROM CoreTracks
-          INNER JOIN CoreArtists ON CoreTracks.ArtistID = CoreArtists.ArtistID
-          INNER JOIN CoreAlbums ON CoreTracks.AlbumID = CoreAlbums.AlbumID
-          WHERE  CoreTracks.Title = :title
-           AND CoreArtists.Name = :artist
-           AND CoreAlbums.Title = :album
-           LIMIT 1);
-        """},
-
-    'clementine': {
-
-        'extract': """
-        SELECT artist,album,title,rating,playcount,skipcount
-        FROM songs
-        WHERE rating > -1
-        OR playcount > 0
-        OR skipcount > 0
-        ORDER BY artist,album,title;
-        """,
-
-        'update': """
-        UPDATE songs
-        SET rating = :rating,
-        playcount = :play,
-        skipcount = :skip
-        WHERE artist = :artist
-        AND album = :album
-        AND title = :title;
-        """}
-}
 
 
 def error(msg, is_exit=True):
@@ -74,154 +23,326 @@ def error(msg, is_exit=True):
         sys.exit()
 
 
-def backup_db(dbpath):
-    """
-    Backs up a given database
-    Returns the path for the copy
-    """
-    backup = "{0}-{1}.bk".format(dbpath, str(time.time()))
-    try:
-        shutil.copy(dbpath, backup)
-    except shutil.Error:
-        error("Couldn't copy {0} to {1}".format(dbpath, backup))
-    else:
-        logging.info("Backed up {0} to {1}".format(dbpath, backup))
+class Dbfile(object):
+    """Dbfile Banshee/Clementine operations"""
 
-    return backup
+    _QUERIES = {
+        'banshee': {
 
+            'extract': """
+            SELECT CoreArtists.Name, CoreAlbums.Title, CoreTracks.Title,
+            CoreTracks.Rating, CoreTracks.PlayCount, CoreTracks.SkipCount
+            FROM CoreTracks
+            INNER JOIN CoreArtists ON CoreTracks.ArtistID = CoreArtists.ArtistID
+            INNER JOIN CoreAlbums ON CoreTracks.AlbumID = CoreAlbums.AlbumID
 
-def transform_row(row, from_format, to_format):
-    """
-    Transforms a row into others database format
-    """
-    if from_format == to_format:
-        return row
+            WHERE CoreTracks.Rating > 0
+            OR CoreTracks.PlayCount > 0
+            OR CoreTracks.SkipCount > 0
+            ORDER BY CoreArtists.Name,CoreAlbums.Title,CoreTracks.Title;
+            """,
 
-    row = list(row)
-    if from_format == 'banshee':
-        row[3] *= 0.2  # clementine uses (0-10)/10
+            'update': {
+                'overwrite': """
+                              UPDATE CoreTracks
+                              SET Rating = :rating,
+                                  PlayCount = :play,
+                                  SkipCount = :skip
+                              WHERE CoreTracks.TrackID = (
+                                SELECT CoreTracks.TrackID
+                                FROM CoreTracks
+                                INNER JOIN CoreArtists
+                                  ON CoreTracks.ArtistID = CoreArtists.ArtistID
+                                INNER JOIN CoreAlbums
+                                  ON CoreTracks.AlbumID = CoreAlbums.AlbumID
+                                WHERE  CoreTracks.Title = :title
+                                  AND CoreArtists.Name = :artist
+                                  AND CoreAlbums.Title = :album
+                                LIMIT 1);
+                              """,
 
-    elif from_format == 'clementine':
-        row[3] *= 5  # banshees uses 0-5
+                'noverwrite': """
+                                UPDATE CoreTracks
+                                SET Rating = :rating,
+                                    PlayCount = PlayCount + :play,
+                                    SkipCount = SkipCount + :skip
+                                WHERE CoreTracks.TrackID = (
+                                  SELECT CoreTracks.TrackID
+                                  FROM CoreTracks
+                                  INNER JOIN CoreArtists
+                                  ON CoreTracks.ArtistID = CoreArtists.ArtistID
+                                  INNER JOIN CoreAlbums
+                                  ON CoreTracks.AlbumID = CoreAlbums.AlbumID
+                                  WHERE  CoreTracks.Title = :title
+                                    AND CoreArtists.Name = :artist
+                                    AND CoreAlbums.Title = :album
+                                  LIMIT 1);
+                                """
+            }
+    },
 
-    return row
+        'clementine': {
 
+            'extract': """
+            SELECT artist,album,title,rating,playcount,skipcount
+            FROM songs
+            WHERE rating > -1
+            OR playcount > 0
+            OR skipcount > 0
+            ORDER BY artist,album,title;
+            """,
 
-def check_row(row, dbformat):
-    """
-    Checks whether a row should be used for update or not
-    """
-    # [artist album title rating playcount skipcount]
-    if dbformat == 'banshee':
-        return row[3] > 0 or row[4] > 0 or row[5] > 0
-    elif dbformat == 'clementine':
-        return row[3] != -1 or row[4] > 0 or row[5] > 0
+            'update': {
+                'overwrite': """
+                              UPDATE songs
+                              SET rating = :rating,
+                              playcount = :play,
+                              skipcount = :skip
+                              WHERE artist = :artist
+                              AND album = :album
+                              AND title = :title;
+                              """
+                             ,
 
-
-def detect_format(conn):
-    """
-    Returns the format for the database which conn is connected:
-        banshee - Banshee format
-        clementine - Clementine format
-        None - Unknown
-    """
-    # Known tables for each format
-    dbs = {
-        'banshee': ['CoreTracks', 'CoreAlbums', 'CoreArtists'],
-        'clementine': ['songs', 'playlists', 'playlist_items']
+                'noverwrite':  """
+                               UPDATE songs
+                               SET rating = :rating,
+                               playcount = playcount + :play,
+                               skipcount = skipcount + :skip
+                               WHERE artist = :artist
+                               AND album = :album
+                               AND title = :title;
+                               """
+            }
+        }
     }
 
-    cursor = conn.cursor()
-    for db, tests in dbs.iteritems():
-        dbformat = db
+    # Known tables for each format
+    _TABLES = { 'banshee': ['CoreTracks', 'CoreAlbums', 'CoreArtists'],
+               'clementine': ['songs', 'playlists', 'playlist_items']
+              }
+
+    def __init__(self, dbpath):
+        self.dbpath = dbpath
+        self.bkpath = self.backup_db()
+
+        self.conn = self.open_db(self.bkpath)
+        self.format = self.detect_format()
+
+    @staticmethod
+    def open_db(dbpath):
+        "Opens and returns a sqlite connection"
         try:
-            for table in tests:
-                cursor.execute("SELECT * FROM {0} LIMIT 1".format(table))
-        except sqlite3.DatabaseError:
-            logging.debug("Failed query using table {1}".format(table))
-            dbformat = None
+            return sqlite3.connect(dbpath)
+        except sqlite3.DatabaseError, err:
+            error("Couldn't connect to database in {0}: {1}"
+                  .format(dbpath, err))
+
+    def row(self, rawrow):
+        "Returns a RowOperations object from a given sqlite row"
+        # Get operations object
+        if self.format is 'banshee':
+            return BansheeRow(rawrow)
+        elif self.format is 'clementine':
+            return ClementineRow(rawrow)
         else:
-            # If all tests for a given format passed, that's it
-            return dbformat
+            error("Unkown format for dbfile: {0}".format(self.dbpath))
+
+    def backup_db(self):
+        "Backs up a given database Returns the path for the copy"
+        backup = "{0}-{1}.bk".format(self.dbpath, str(time.time()))
+        try:
+            shutil.copy(self.dbpath, backup)
+        except shutil.Error:
+            error("Couldn't copy {0} to {1}".format(self.dbpath, backup))
+        else:
+            logging.info("Backed up {0} to {1}".format(self.dbpath, backup))
+
+        return backup
+
+    def detect_format(self):
+        """Returns the format for the database which conn is connected:
+            banshee - Banshee format
+            clementine - Clementine format
+            None - Unknown
+        """
+        cursor = self.conn.cursor()
+        for db, tests in self._TABLES.iteritems():
+            dbformat = db
+            try:
+                for table in tests:
+                    cursor.execute("SELECT * FROM {0} LIMIT 1".format(table))
+            except sqlite3.DatabaseError:
+                logging.debug("Failed query using table {1}".format(table))
+                dbformat = None
+            else:
+                # If all tests for a given format passed, that's it
+                return dbformat
+
+    def copy_data(self, from_db, overwrite=False):
+        """Copies and sets values from 'from_db' to database backup
+        Default behaviour is to add playcounts and skipcounts
+        use overwrite to avoid this.
+        """
+        # Get cursors for backup files
+        tocur, fromcur = self.conn.cursor(), self.conn.cursor()
+        overw = 'overwrite' if overwrite else 'noverwrite'
+
+        # Query all tracks from 'from_db'
+        logging.info("Retrieving data from {0}".format(from_db.dbpath))
+        try:
+            fromcur.execute(self._QUERIES[from_db.format]['extract'])
+        except sqlite3.DatabaseError, err:
+            error("Error detected while extracting from {0}: {1}"\
+                .format(from_db.dbpath, str(err)))
+
+        # Update database
+        logging.info("Updating {0}'s ratings and counters".format(self.dbpath))
+        counter = 0
+        for row in fromcur:
+            row = from_db.row(row)
+
+            # Check whether the row should be updated
+            if not row.check():
+                logging.debug("Ignoring row: {0}".format(row.row))
+                continue
+
+            # Transform numeric schemes from from_db to this db format
+            row.transform(self.format)
+
+            logging.debug("Changing row: {0}".format(row.row))
+
+            try:
+                tocur.execute(self._QUERIES[self.format]['update'][overw],
+                              { "artist":  row['artist'],
+                                "album":   row['album'],
+                                "title":   row['title'],
+                                "rating":  float(row['rating']),
+                                "play":    int(row['play']),
+                                "skip":    int(row['skip']) })
+
+            except sqlite3.DatabaseError, err:
+                error("Error detected while updating db: {0}".format(err))
+            counter += 1
+
+        logging.info("{0} tracks successfully updated".format(counter))
+
+    def close(self):
+        "Closes internal connection"
+        self.conn.close()
+
+    def commit(self):
+        "Commit changes and overwrite original db"
+        # commit changes
+        self.conn.commit()
+        try:
+            shutil.move(self.bkpath, self.dbpath)
+        except shutil.Error:
+            error("Couldn't overwrite {1} with {0}"
+                  .format(self.dbpath, self.bkpath))
+        else:
+            logging.info("Updated {0}".format(self.dbpath))
+
+
+class RowOperations(object):
+    "Common row operatons. Abstract class, do not instantiate"
+
+    __metaclass__ = ABCMeta
+
+    _fields = ['artist', 'album', 'title', 'rating', 'play', 'skip']
+
+    def __init__(self, row):
+        self.row = list(row)
+
+    def check(self):
+        "Returns True if it should be updated"
+        if opts.only_rated:
+            return self.is_rated()
+
+        return self.is_rated() or self.is_played() or self.is_skipped()
+
+    def is_played(self):
+        "Returns if the row has playcounts"
+        # row fields: [artist album title rating playcount skipcount]
+        return self.row[4] > 0
+
+    def is_skipped(self):
+        "Returns if the row has skipcounts"
+        # row fields: [artist album title rating playcount skipcount]
+        return self.row[5] > 0
+
+    def _find(self, name):
+        for i, field in enumerate(self._fields):
+            if field == name:
+                return i
+
+    def __getitem__(self, key):
+        if isinstance(key, str):
+            key = self._find(key)
+            if key is None:
+                raise IndexError("{0} is not a field of row".format(key))
+
+        return self.row[key]
+
+    def __setitem__(self, key, val):
+        if isinstance(key, str):
+            key = self._find(key)
+            if key is None:
+                raise IndexError("{0} is not a field of row".format(key))
+
+        self.row[key] = val
+
+
+class BansheeRow(RowOperations):
+    "Banshee row operations"
+
+    def is_rated(self):
+        "Returns if the row has been rated"
+        # row fields: [artist album title rating playcount skipcount]
+        return self.row[3] == 0
+
+    def transform(self, to_format):
+        """Transforms and returns the row to to_format
+        Move ratings from [-1-5] to [0-1] for clementine
+        """
+        # row fields: [artist album title rating playcount skipcount]
+        if to_format == 'clementine':
+            if self.row[3] == -1:
+                self.row[3] = 0
+            self.row[3] *= 0.2
+
+        return self.row
+
+
+class ClementineRow(RowOperations):
+    "Clementine row operations"
+
+    def is_rated(self):
+        "Returns if the row has been rated"
+        # row fields: [artist album title rating playcount skipcount]
+        return self.row[3] == -1
+
+    def transform(self, to_format):
+        """Transforms and returns the row to to_format
+        Move ratings from [0-1] to [-1-5] for banshee
+        """
+        # row fields: [artist album title rating playcount skipcount]
+        if to_format == 'banshee':
+            self.row[3] *= 5
+            if self.row[3] == 0:
+                self.row[3] = -1
+
+        return self.row
 
 
 def main(opts, args):
 
-    logging.info("Backing up databases...")
-    frombackup = backup_db(opts.dbfrom)
-    tobackup = backup_db(opts.dbto)
-    #shutil.copy(opts.dbto, "{0}-{1}.bk".format(opts.dbto, str(time.time())))
+    from_db, to_db = Dbfile(opts.dbfrom), Dbfile(opts.dbto)
 
-    # We'll use the copied db to write to and read from
-    # in order to avoid concurrence pitfalls
-    logging.info("Conecting to databases...")
-    try:
-        fromconn = sqlite3.connect(frombackup)
-    except sqlite3.DatabaseError:
-        error("Couldn't connect to database: {0}".format(frombackup))
-
-    try:
-        toconn = sqlite3.connect(tobackup)
-    except sqlite3.DatabaseError:
-        error("Couldn't connect to database: {0}".format(tobackup))
-
-    logging.info("Checking formats...")
-    opts.dbfrom_format = detect_format(fromconn)
-    if opts.dbfrom_format is None:
-        error("Unknown format for {0}".format(opts.dbfrom))
-
-    opts.dbto_format = detect_format(toconn)
-    if opts.dbto_format is None:
-        error("Unknown format for {0}".format(opts.dbto))
-
-    logging.info("Extracting from {0} ({1}) to {2} ({3})"\
-            .format(os.path.basename(frombackup), opts.dbfrom_format,
-                    os.path.basename(tobackup), opts.dbto_format))
-
-    # Get cursors
-    fromcur, tocur = fromconn.cursor(), toconn.cursor()
-
-    # Get the data
-    logging.info("Retrieving data from {0}".format(frombackup))
-    try:
-        fromcur.execute(_QUERIES_[opts.dbfrom_format]['extract'])
-    except sqlite3.DatabaseError, err:
-        error("Error detected while extracting from {0}: {1}"\
-              .format(frombackup, str(err)))
-
-    # Update database
-    logging.info("Updating {0} ratings and counters".format(tobackup))
-    for row in fromcur:
-        # Check whether the row should be updated
-        if not check_row(row, opts.dbfrom_format):
-            continue
-
-        # Transform numeric schemes
-        row = transform_row(row, opts.dbfrom_format, opts.dbto_format)
-
-        try:
-            # artist album title rating
-            tocur.execute(_QUERIES_[opts.dbto_format]['update'],
-                          {"artist": row[0], "album": row[1], "title": row[2],
-                           "rating": float(row[3]), "play": int(row[4]),
-                           "skip": int(row[5])})
-        except sqlite3.DatabaseError, err:
-            error("Error detected while updating db: {0}".format(err))
-
-    # commit changes
-    toconn.commit()
-
-    logging.info("Substituting original database {0} with the copy {1}"\
-            .format(os.path.basename(opts.dbto), os.path.basename(tobackup)))
-    try:
-        shutil.move(tobackup, opts.dbto)
-    except shutil.Error, err:
-        error("Error detected while setting {0} from the new database {1}"\
-            .format(os.path.basename(opts.dbto), os.path.basename(tobackup)))
-
-    # Close connections
-    fromconn.close()
-    toconn.close()
+    to_db.copy_data(from_db, opts.overwrite)
+    to_db.commit()
+    to_db.close()
+    from_db.close()
 
 if __name__ == "__main__":
     parser = OptionParser()
@@ -229,6 +350,14 @@ if __name__ == "__main__":
     parser.add_option("-f", "--from", dest="dbfrom",
                       action="store", default="",
                       help="Source database path")
+
+    parser.add_option("-r", "--only-rated", dest="only_rated",
+                      action="store_true", default=False,
+                      help="Ignore unrated songs")
+
+    parser.add_option("-o", "--overwrite", dest="overwrite",
+                      action="store_true", default=False,
+                      help="Overwrites playcounts instead of adding them")
 
     parser.add_option("-t", "--to", dest="dbto",
                       action="store", default="",
