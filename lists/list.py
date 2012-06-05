@@ -13,6 +13,19 @@ from lxml import objectify
 from optparse import OptionParser
 
 
+class PIterable(object):
+    "Base class for iterable playlists"
+
+    def __init__(self, path):
+        "Base constructor, sets self.path"
+        self.path = path
+
+    def __iter__(self):
+        "Returns a new object to iterate with it"
+        klass = type(self)
+        return klass(self.path)
+
+
 class Xspf(object):
     """Iterate over a XSPF playlist file."""
 
