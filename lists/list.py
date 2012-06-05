@@ -102,6 +102,28 @@ def detect_format(path):
     return None
 
 
+_FORMATS_ = {"m3u": M3u, "xspf": Xspf}
+
+
+def get_playlist(path, pformat=None):
+    """Returns a Playlist object of the given format.
+    "if pformat is not specified or None, format will be auto detected
+    """
+    if pformat is None:
+        pformat = detect_format(path)
+
+    if pformat is None:
+        print "Error: Couldn't autodetect format for playlist."
+        exit()
+
+    if pformat not in _FORMATS_.keys():
+        print "Error: Unkown '{0}' playlist format." .format(options.format)
+        exit()
+
+    # Create playlist and sync directory
+    return _FORMATS_[pformat](path)
+
+
 def prefix_name(number, name, total):
     "Returns name prefixed with number. Filled with zeros to fit total"
     return "{0}_{1}".format(str(number).zfill(len(str(total))), name)
