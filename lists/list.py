@@ -211,8 +211,10 @@ def copy(from_path, to_path):
     return True
 
 
-def main(pl_path, remote_dir, options):
+def main():
 
+    pl_path = args[0]
+    remote_dir = args[1]
     formats = {"m3u": M3u, "xspf": Xspf}
 
     # Check paths
@@ -310,4 +312,4 @@ if __name__ == "__main__":
         options.numbered = True
         options.shuffle = True
 
-    main(args[0], args[1], options)
+    main()
