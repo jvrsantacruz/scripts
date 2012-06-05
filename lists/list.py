@@ -9,6 +9,7 @@ Javier Santacruz 04/06/2011
 import os
 import shutil
 import random
+from lxml import objectify
 from optparse import OptionParser
 
 
@@ -18,7 +19,6 @@ class Xspf(object):
     ns = "http://xspf.org/ns/0/"
 
     def __init__(self, path):
-        from lxml import objectify
         root = objectify.parse(path).getroot()
         self.list = root.trackList.track[:]
         self.index = 0
