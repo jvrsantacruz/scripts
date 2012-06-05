@@ -125,81 +125,56 @@ def get_playlist(path, pformat=None):
 
 
 def prefix_name(number, name, total):
-    "Returns name prefixed with number. Filled with zeros to fit total"
+    """Returns name prefixed with number. Filled with zeros to fit total
+    >>> prefix_name(15, 'filename', 3)
+    '015_filename'
+    >>> prefix_name(15, 'filename', 1)
+    '15_filename'
+    """
     return "{0}_{1}".format(str(number).zfill(len(str(total))), name)
 
 
-def sync_dirs(local_files, remote_dir, opts):
-    """Copy a set files to a directory.
-    If delete is set, will remove files in remote which are not in local.
-    If link is set, will perform hard link instead of copy.
-    If force is set, will copy all files ignoring if they're already in remote.
+def get_expected_names(local_files):
+    "Returns the filenames expected to be on remote"
+    if not options.numbered:
+        return local_files
+
+    return [prefix_name(i + 1, f, len(local_files))
+            for i, f in enumerate(local_files)]
+
+
+def get_copy_names(local_files, expected_names, remote_names):
+    "Returns the files to be copied"
+    if options.force:
+        return local_files  # copy all of them
+
+    return [f for i, f in enumerate(local_files)
+            if expected_names[i] not in remote_names]
+
+
+def delete_files(expected_names, remote_dir):
+    """Deletes files in remote which aren't expected to be there
+    Returns the name of files effectively deleted
     """
+    delete_list = [os.path.join(remote_dir, f)
+                   for f in os.listdir(remote_dir)
+                   if f not in expected_names]
 
-    # Obtain file names in order to compare file subsets
-    total_names = len(local_files)
+    print "Removing {0} files from {1}".format(len(delete_list), remote_dir)
 
-    if opts.shuffle:
-        random.shuffle(local_files)
+    deleted = 0
+    for fpath in delete_list:
+        try:
+            os.remove(fpath)
+        except OSError, err:
+            print "Error: Couldn't remove {0} from {1}: {2}"\
+                    .format(os.path.basename(fpath), remote_dir, err)
+        else:
+            deleted += 1
+            print "Removed {0}/{1}: {2}"\
+                    .format(deleted, len(delete_list), fpath)
 
-    local_names = [os.path.basename(f) for f in local_files]
-
-    if not opts.numbered:
-        expected_names = local_names
-    else:
-        expected_names = [prefix_name(i + 1, f, total_names)
-                             for i, f in enumerate(local_names)]
-
-    remote_names = os.listdir(remote_dir)
-
-    copy_files = [f for i, f in enumerate(local_files)
-                  if opts.force or expected_names[i] not in remote_names]
-
-    copied = deleted = 0
-
-    # Remove files that are not in the playlist, if indicated.
-    if opts.delete:
-        delete_files = [os.path.join(remote_dir, f)
-                        for f in remote_names
-                        if f not in expected_names]
-
-        print "Removing {0} files from {1}"\
-                .format(len(delete_files, remote_dir))
-        for f in delete_files:
-            try:
-                os.remove(f)
-            except IOError, err:
-                print "Error: Couldn't remove {0} from {1}: {2}"\
-                    .format(os.path.basename(f), remote_dir, err)
-            else:
-                deleted += 1
-                print "Removed {0}/{1}: {2}"\
-                        .format(deleted, len(delete_files), f)
-
-    if not opts.force:
-        for f in set(remote_names).intersection(set(expected_names)):
-            print "Skipping {0} which is already in {1}"\
-                    .format(os.path.basename(f), remote_dir)
-
-    # Copy files
-    action = "Linking" if opts.link else "Copying"
-    print "{0} {1} files to {2}".format(action, len(copy_files), remote_dir)
-    for i, f in enumerate(copy_files):
-        dest = os.path.basename(f)
-        if opts.numbered:
-            dest = prefix_name(i + 1, dest, total_names)
-        dest = os.path.join(remote_dir, dest)
-
-        op_result = link(f, dest) if opts.link else copy(f, dest)
-        op_action = "Linked" if opts.link else "Copied"
-
-        if op_result:
-            copied += 1
-            print "{0} {1}/{2}: {3}".format(op_action, copied,
-                                            len(copy_files), f)
-
-    print "{0} complete: {1} files copied, {2} files removed"\
-            .format(action, copied, deleted)
+    return deleted
 
 
 def link(from_path, to_path):
@@ -231,6 +206,61 @@ def copy(from_path, to_path):
         return False
 
     return True
+
+
+def send_files(copy_files, expected_names, remote_dir, dolink=False):
+    """Copies/Links files to remote dir as expected_name
+    Links instead of copying the files if link is True
+    returns the number of files copied/linked
+    """
+    action = "Linking" if dolink else "Copying"
+    print "{0} {1} files to {2}".format(action, len(copy_files), remote_dir)
+    action = "Linked" if dolink else "Copied"
+    copied = 0
+    for i, cfile in enumerate(copy_files):
+        dest = os.path.join(remote_dir, expected_names[i])
+        op_result = link(cfile, dest) if dolink else copy(cfile, dest)
+        if op_result:
+            copied += 1
+            print "{0} {1}/{2}: {3}".format(action, copied,
+                                            len(copy_files), cfile)
+    return copied
+
+
+def sync_dirs(local_files, remote_dir, opts):
+    """Copy a set files to a directory.
+    If delete is set, will remove files in remote which are not in local.
+    If link is set, will perform hard link instead of copy.
+    If force is set, will copy all files ignoring if they're already in remote.
+    """
+    # Obtain file names in order to compare file subsets
+    if opts.shuffle:
+        random.shuffle(local_files)
+
+    local_names = [os.path.basename(f) for f in local_files]  # local names
+    expected_names = get_expected_names(local_names)  # what sould be in remote
+    remote_names = os.listdir(remote_dir)             # what is in remote
+
+    # Remove undesired files
+    deleted = 0
+    if opts.delete:
+        deleted = delete_files(expected_names, remote_dir)
+
+    # Paths to be copied to remote
+    copy_files = get_copy_names(local_files, expected_names, remote_names)
+
+    # Warn about already present files which are being skipped
+    if not opts.force:
+        for f in set(remote_names).intersection(set(expected_names)):
+            print "Skipping {0} which is already in {1}"\
+                    .format(os.path.basename(f), remote_dir)
+
+    # Copy/Link files to remote directory
+    copied = send_files(copy_files, expected_names, remote_dir, opts.link)
+    action = "Linking" if opts.link else "Copying"
+
+    print "{0} complete: {1} files copied, {2} files removed"\
+            .format(action, copied, deleted)
 
 
 def main():
