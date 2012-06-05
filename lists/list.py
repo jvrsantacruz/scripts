@@ -26,18 +26,16 @@ class PIterable(object):
         return klass(self.path)
 
 
-class Xspf(object):
-    """Iterate over a XSPF playlist file."""
+class Xspf(PIterable):
+    "Iterate over a XSPF playlist file."
 
     ns = "http://xspf.org/ns/0/"
 
     def __init__(self, path):
-        root = objectify.parse(path).getroot()
-        self.list = root.trackList.track[:]
+        super(Xspf, self).__init__(path)
+        self.root = objectify.parse(path).getroot()
+        self.list = self.root.trackList.track[:]
         self.index = 0
-
-    def __iter__(self):
-        return self
 
     def next(self):
         "Returns title, absolute_path for every item on the list"
