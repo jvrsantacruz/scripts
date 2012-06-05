@@ -218,10 +218,6 @@ def main():
     formats = {"m3u": M3u, "xspf": Xspf}
 
     # Check paths
-    if not os.path.exists(pl_path):
-        print "Error: playlist doesn't exist at %s. Exiting." % pl_path
-        exit()
-
     if options.format == "auto":
         options.format = detect_format(pl_path)
 
@@ -306,10 +302,15 @@ if __name__ == "__main__":
     if len(args) != 2:
         print errors[len(args) if len(args) < 3 else 2]
         print parser.print_help()
-        exit()
+        exit(1)
 
     if options.mix:
         options.numbered = True
         options.shuffle = True
+
+    if not os.path.isfile(args[0]):
+        print "Error: playlist doesn't exist or isn't a file: {0}. Exiting."\
+                .format(args[0])
+        exit(1)
 
     main()
