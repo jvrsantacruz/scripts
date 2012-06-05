@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
 """
-Copy files defined in a playlist to a directory.
+Copy files listed in a playlist to a directory.
 
 Javier Santacruz 04/06/2011
 """
@@ -27,7 +27,7 @@ class Xspf(object):
         return self
 
     def next(self):
-        """Returns title, absolute_path for every item on the list"""
+        "Returns title, absolute_path for every item on the list"
         if self.index == len(self.list):
             raise StopIteration
 
@@ -41,7 +41,7 @@ class Xspf(object):
 
 
 class M3u(object):
-    """Iterate over a M3U playlist file."""
+    "Iterate over a M3U playlist file."
 
     ns = "#EXTM3U"
 
@@ -56,8 +56,7 @@ class M3u(object):
         return self
 
     def next(self):
-        """
-        Returns title, absolute_path for every item on the playlist.
+        """Returns title, absolute_path for every item on the playlist.
 
         M3u objects have the following structure:
 
@@ -80,12 +79,12 @@ class M3u(object):
             line = self.file.readline()
 
         path = os.path.join(self.base_path, line)[0:-1]
+
         return title, path
 
 
 def detect_format(path):
-    """
-    Autodetects the format of a playlist file
+    """Autodetects the format of a playlist file
     returns (m3u|xspf) or None if unkown
     """
 
@@ -107,8 +106,7 @@ def prefix_name(number, name, total):
 
 
 def sync_dirs(local_files, remote_dir, opts):
-    """
-    Copy a set files to a directory.
+    """Copy a set files to a directory.
     If delete is set, will remove files in remote which are not in local.
     If link is set, will perform hard link instead of copy.
     If force is set, will copy all files ignoring if they're already in remote.
@@ -250,6 +248,7 @@ def main(pl_path, remote_dir, options):
     files = [os.path.realpath(f[1]) for f in playlist]
 
     sync_dirs(files, remote_dir, options)
+
 
 if __name__ == "__main__":
 
