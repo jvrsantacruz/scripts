@@ -61,7 +61,6 @@ class M3u(PIterable):
         self.base_path = os.path.dirname(self.path)
         self.file = open(self.path, "r")
 
-        self.file.readline()  # Discard first line.
     def next(self):
         """Returns title, absolute_path for every item on the playlist.
 
@@ -72,19 +71,15 @@ class M3u(PIterable):
         ../Music/song.mp3
         """
 
-        # Get a line starting with #
-        line = self.file.readline()
-
-        # EOF found, stop Iteration.
-        if not line:
-            raise StopIteration
-
-        # Read comments
-        title = ""
-        if line.startswith('#'):
-            title = line.split(',', 1)[1]
+        # Find a #EXTINF line and a path line
+        line, line_prev = '#', ''
+        while line.startswith('#'):
+            line_prev = line
             line = self.file.readline()
+            if not line:
+                raise StopIteration
 
+        title = line_prev.split(',', 1)[1]  # get title
         path = os.path.join(self.base_path, line)[0:-1]
 
         return title, path
