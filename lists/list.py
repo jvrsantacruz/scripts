@@ -102,7 +102,7 @@ def detect_format(path):
 
 def prefix_name(number, name, total):
     "Returns name prefixed with number. Filled with zeros to fit total"
-    return "%s_%s" % (("%i" % number).zfill(len(str(total))), name)
+    return "{0}_{1}".format(str(number).zfill(len(str(total))), name)
 
 
 def sync_dirs(local_files, remote_dir, opts):
@@ -139,25 +139,27 @@ def sync_dirs(local_files, remote_dir, opts):
                         for f in remote_names
                         if f not in expected_names]
 
-        print "Removing %i files from %s" % (len(delete_files), remote_dir)
+        print "Removing {0} files from {1}"\
+                .format(len(delete_files, remote_dir))
         for f in delete_files:
             try:
                 os.remove(f)
-            except IOError:
-                print "Error: Couldn't remove %s from %s"\
-                    % (os.path.basename(f), remote_dir)
+            except IOError, err:
+                print "Error: Couldn't remove {0} from {1}: {2}"\
+                    .format(os.path.basename(f), remote_dir, err)
             else:
                 deleted += 1
-                print "Removed %i/%i: %s" % (deleted, len(delete_files), f)
+                print "Removed {0}/{1}: {2}"\
+                        .format(deleted, len(delete_files), f)
 
     if not opts.force:
         for f in set(remote_names).intersection(set(expected_names)):
-            print "Skipping %s which is already in %s"\
-                    % (os.path.basename(f), remote_dir)
+            print "Skipping {0} which is already in {1}"\
+                    .format(os.path.basename(f), remote_dir)
 
     # Copy files
     action = "Linking" if opts.link else "Copying"
-    print "%s %i files to %s" % (action, len(copy_files), remote_dir)
+    print "{0} {1} files to {2}".format(action, len(copy_files), remote_dir)
     for i, f in enumerate(copy_files):
         dest = os.path.basename(f)
         if opts.numbered:
@@ -172,8 +174,8 @@ def sync_dirs(local_files, remote_dir, opts):
             print "{0} {1}/{2}: {3}".format(op_action, copied,
                                             len(copy_files), f)
 
-    print "%s complete: %i files copied, %i files removed"\
-            % (action, copied, deleted)
+    print "{0} complete: {1} files copied, {2} files removed"\
+            .format(action, copied, deleted)
 
 
 def link(from_path, to_path):
@@ -224,23 +226,24 @@ def main(pl_path, remote_dir, options):
             exit()
 
     if options.format not in formats.keys():
-        print "Error: Unkown '%s' playlist format." % options.format
+        print "Error: Unkown '{0}' playlist format." .format(options.format)
         exit()
 
     if options.nocreate and not os.path.exists(remote_dir):
-        print "Error: %s doesn't exists." % remote_dir
+        print "Error: {0} doesn't exists.".format(remote_dir)
         exit()
 
     if not options.nocreate and not os.path.exists(remote_dir):
         try:
             os.mkdir(remote_dir)
         except OSError:
-            print "Error: %s doesn't exists and couldn't be created."\
-                % remote_dir
+            print "Error: {0} doesn't exists and couldn't be created."\
+                .format(remote_dir)
             exit()
 
     if not os.path.isdir(remote_dir):
-        print "Error: %s doesn't is not a directory." % remote_dir
+        print "Error: {0} doesn't exists or is not a directory."\
+                .format(remote_dir)
         exit()
 
     # Create playlist and sync directory
