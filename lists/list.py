@@ -237,19 +237,6 @@ def main():
 
     pl_path = args[0]
     remote_dir = args[1]
-    formats = {"m3u": M3u, "xspf": Xspf}
-
-    # Check paths
-    if options.format == "auto":
-        options.format = detect_format(pl_path)
-
-        if options.format is None:
-            print "Error: Couldn't autodetect format for playlist."
-            exit()
-
-    if options.format not in formats.keys():
-        print "Error: Unkown '{0}' playlist format." .format(options.format)
-        exit()
 
     if options.nocreate and not os.path.exists(remote_dir):
         print "Error: {0} doesn't exists.".format(remote_dir)
@@ -268,8 +255,7 @@ def main():
                 .format(remote_dir)
         exit()
 
-    # Create playlist and sync directory
-    playlist = formats[options.format](pl_path)
+    playlist = get_playlist(pl_path, options.format)
     files = [os.path.realpath(f[1]) for f in playlist]
 
     sync_dirs(files, remote_dir, options)
@@ -309,8 +295,8 @@ if __name__ == "__main__":
                       help="Like --shuffle --numbered")
 
     parser.add_option("-t", "--format", dest="format",
-                      action="store", default="auto",
-                      help="Select format (m3u|xspf). Autodetect by default.")
+                      action="store", default=None,
+                      help="Select format (m3u|xspf). Autodetects by default.")
 
     parser.set_usage("Usage: [options] playlist directory")
 
