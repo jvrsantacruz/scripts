@@ -51,21 +51,17 @@ class Xspf(PIterable):
         return title, path
 
 
-class M3u(object):
+class M3u(PIterable):
     "Iterate over a M3U playlist file."
 
     ns = "#EXTM3U"
 
     def __init__(self, path):
-        self.path = path
+        super(M3u, self).__init__(path)
         self.base_path = os.path.dirname(self.path)
         self.file = open(self.path, "r")
 
         self.file.readline()  # Discard first line.
-
-    def __iter__(self):
-        return self
-
     def next(self):
         """Returns title, absolute_path for every item on the playlist.
 
