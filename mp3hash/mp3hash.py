@@ -224,7 +224,7 @@ def main():
     for arg in args:
         path = os.path.realpath(arg)
         if not os.path.isfile(path):
-            logging.error("Couldn't open {0}. File doesn't exist or isn't a"
+            error("Couldn't open {0}. File doesn't exist or isn't a"
                           " regular file".format(arg))
             continue
 
