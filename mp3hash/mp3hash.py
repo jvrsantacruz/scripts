@@ -189,10 +189,8 @@ class TaggedFile(object):
     @property
     def endbyte(self):
         "Returns the last byte of music data in file"
-        size = self.id3v1_totalsize
-        if not size:
-            self.file.seek(0, 2)
-            return self.file.tell()
+        self.file.seek(-self.id3v1_totalsize, 2)
+        return self.file.tell()
 
     @property
     def musiclimits(self):
