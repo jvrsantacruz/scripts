@@ -12,18 +12,18 @@ Similarly to `sha1sum` or `md5sum`, it takes one or more files and returns the h
 	6611bc5b01a2fc6a6386a871e8c51f86e1f12b33 13_Hotel-California-(Gipsy-Kings).mp3
 	6611bc5b01a2fc6a6386a871e8c51f86e1f12b33 14_Hotel-California-(Gipsy-Kings).mp3
 
-It returns the same hash number though the tags are different and so their regular hashes:
+It returns the same hash number, even though the tags are different, and so their regular hashes:
 
 	$ sha1sum *.mp3
 	6a1d5f8317add10e205ae30174630b47645fb5b4  13_Hotel-California-(Gipsy-Kings).mp3
 	c28d6976114d31df3366d9935eb0bedd36cf1f0b  14_Hotel-California-(Gipsy-Kings).mp3
 
-The hash it's made strictly using music data in the file, by calculating the tags sizes and
+The hash it's made strictly using the music data in the file, by calculating the tags sizes and
 omitting them.
 
 The default hashing algorithm is `sha-1`, but any algorithm can be used as long it's supported by
-the Python's `hashlib` module. A complete list of all available algorithms can be obtained by
-calling the program with the `--list-algorithms`.
+the Python's `hashlib` module. A complete list of all available hashing algorithms can be obtained
+by calling the program with the `--list-algorithms`.
 
 	$ ./mp3hash --list-algorithms
 	md5
