@@ -39,7 +39,9 @@ def error(msg, is_exit=True):
 
 
 def hashfile(ofile, start, end, alg='sha1'):
-    "Hashes a open file data starting from byte 'start' to the byte 'end'"
+    """Hashes a open file data starting from byte 'start' to the byte 'end'
+    The hexdigest string is calculated considering only bytes between start,end
+    """
     hasher = hashlib.new(alg)
     ofile.seek(start)
 
