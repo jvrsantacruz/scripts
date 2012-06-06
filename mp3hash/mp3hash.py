@@ -38,67 +38,6 @@ def error(msg, is_exit=True):
         sys.exit()
 
 
-def id3v1exists(ofile):
-    "Returns True if the file is id3v1 tagged"
-    ofile.seek(-128, 2)
-    return ofile.read(3) == 'TAG'
-
-
-def id3v1isextended(ofile):
-    "Returns True if the file is id3v1 with extended tag"
-    ofile.seek(-(227 + 128), 2)  # 227 before regular tag
-    return ofile.read(4) == 'TAG+'
-
-
-def id3v1extsize(ofile):
-    "Returns the size of the extended tag"
-    return 227
-
-
-def id3v1size(ofile):
-    "Returns the size in bytes of the id3v1 tag"
-    size = 128
-    if id3v1isextended(ofile):
-        size += id3v1extsize(ofile)
-
-    return size
-
-
-def id3v2exists(ofile):
-    "Returns True if the file is id3v2 tagged"
-    ofile.seek(0)
-    return ofile.read(3) == 'ID3'
-
-
-def id3v2isextended(ofile):
-    "Returns True if the file has id3v2 extended header"
-    ofile.seek(5)
-    flags, = struct.unpack('>b', ofile.read(1))
-    return bool(flags & 0x40)  # xAx0 0000 get A from byte
-
-
-def id3v2extsize(ofile, tagsize):
-    "Returns the size in bytes of the id3v2 extended tag"
-    ofile.seek(tagsize)
-    size = struct.unpack('>i', ofile.read(4))
-    flags, = struct.unpack('>bb', ofile.read(2))
-    crc = 4 if flags & 8 else 0  # flags are A000 get A
-    padding = struct.upnack('>i', ofile.read(4))
-    return size + crc + padding + 10
-
-
-def id3v2size(ofile):
-    "Returns the size in bytes of the id3v2 tag"
-    ofile.seek(6)
-    size, = struct.unpack('>i', ofile.read(4))  # id3v2 size big endian 4 bytes
-    size += 10  # header itself
-
-    if id3v2isextended(ofile):
-        size += id3v2extsize(ofile, size)
-
-    return size
-
-
 def hashfile(ofile, start, end, alg='sha1'):
     "Hashes a open file data starting from byte 'start' to the byte 'end'"
     hasher = hashlib.new(alg)
@@ -123,13 +62,6 @@ def hashfile(ofile, start, end, alg='sha1'):
 
     return hasher.hexdigest()
 
-
-def startbyte(ofile):
-    "Returns the byte where the music starts"
-    if id3v2exists(ofile):
-        return id3v2size(ofile)
-    else:
-        return 0
 
 class TaggedFile(object):
 
@@ -269,26 +201,6 @@ class TaggedFile(object):
         with open(self.path, 'rb') as ofile:
             start, end = self.musiclimits
             return hashfile(ofile, start, end, alg)
-
-def endbyte(ofile):
-    "Returns the last byte of music"
-    if id3v1exists(ofile):
-        return id3v1size(ofile)
-    else:
-        ofile.seek(-1, 2)
-        return ofile.tell()
-
-
-def musiclimits(ofile):
-    "Returns the start, end for music in a file"
-    return (startbyte(ofile), endbyte(ofile),)
-
-
-def mp3hash(path, alg='sha1'):
-    "Returns the hash for a certain audio file ignoring tags"
-    with open(path, 'rb') as ofile:
-        start, end = musiclimits(ofile)
-        return hashfile(ofile, start, end, opts.algorithm)
 
 
 def list_algorithms():
