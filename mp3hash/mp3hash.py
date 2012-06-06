@@ -100,6 +100,9 @@ class TaggedFile(object):
         for attr in self.attrs:
             self.taginfo[attr] = object.__getattribute__(self, attr)
 
+        logging.debug("taginfo: {0} {1}"
+                      .format(os.path.basename(self.path), self.taginfo))
+
         self.file.close()
         self.file = None
         return self.taginfo
@@ -201,8 +204,14 @@ class TaggedFile(object):
         Non cached function. Calculates the hash each time it's called
         """
         with open(self.path, 'rb') as ofile:
-            start, end = self.musiclimits
-            return hashfile(ofile, start, end, alg)
+            try:
+                start, end = self.musiclimits
+            except IOError, ioerr:
+                logging.error('While parsing tags for {0}: {1}'\
+                              .format(self.path, ioerr))
+                return
+            else:
+                return hashfile(ofile, start, end, alg)
 
 
 def list_algorithms():
