@@ -268,4 +268,9 @@ if __name__ == "__main__":
         except IOError, err:
             error("Couldn't open {0}: {1}".format(sys.stdout, err))
 
+    if not args and not opts.list_algorithms:
+        parser.print_help()
+        print
+        error("Insufficient arguments")
+
     main()
