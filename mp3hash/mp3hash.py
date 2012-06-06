@@ -206,7 +206,6 @@ class TaggedFile(object):
 def list_algorithms():
     for alg in hashlib.algorithms:
         print alg
-    sys.exit(0)
 
 
 def main():
@@ -214,6 +213,7 @@ def main():
 
     if opts.list_algorithms:
         list_algorithms()
+        sys.exit(0)
 
     for arg in args:
         path = os.path.realpath(arg)
