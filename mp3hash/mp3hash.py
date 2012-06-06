@@ -217,6 +217,10 @@ def main():
         list_algorithms()
         sys.exit(0)
 
+    if opts.algorithm not in hashlib.algorithms:
+        error("Unkown '{0}' algorithm. Available options are: {1}"\
+              .format(opts.algorithm, ", ".join(hashlib.algorithms)))
+
     for arg in args:
         path = os.path.realpath(arg)
         if not os.path.isfile(path):
