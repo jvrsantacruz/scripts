@@ -11,8 +11,15 @@ indications about its implementation.
 
 This is a short description list of each script.
 
-- **backup**: Simple incremental `time-machine`-like backup scheme, based in hard-linking. 
-- **filediff**: Calculate differences between file trees by finding the exclusive files under each one by inode.
+- **filediff**: Calculate differences between file trees by finding the exclusive files under each
+  one by inode.
+- **lists**: Copies music files in a playlist to a directory. Useful for portable file-based mp3
+  players.
+- **mp3hash**: Hashes files omitting their tag metadata, so the same song with different names can
+  be recognized.
+- **music-bd**: Updates Banshee/Clementine databases for rates, playcounts and skipcounts, so they
+  can be maintained when changing between them or after a database reset.
+
 
 ## Why I upload them?
 
