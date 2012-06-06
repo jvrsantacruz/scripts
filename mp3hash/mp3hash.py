@@ -229,7 +229,8 @@ def main():
             continue
 
         tagfile = TaggedFile(path)
-        print tagfile.hash(), os.path.basename(path) if not opts.hash else ''
+        print tagfile.hash(opts.algorithm),  # No \n
+        print os.path.basename(path) if not opts.hash else ''
 
 
 if __name__ == "__main__":
