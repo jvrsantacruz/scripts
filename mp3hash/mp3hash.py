@@ -304,16 +304,14 @@ def main():
         list_algorithms()
 
     for arg in args:
-        arg = os.path.realpath(arg)
-        if not os.path.isfile(arg):
+        path = os.path.realpath(arg)
+        if not os.path.isfile(path):
             logging.error("Couldn't open {0}. File doesn't exist or isn't a"
                           " regular file".format(arg))
             continue
 
-        with open(arg, 'rb') as ofile:
-            start, end = musiclimits(ofile)
-            print hashfile(ofile, start, end, opts.algorithm), \
-                    os.path.basename(arg) if not opts.hash else ''
+        tagfile = TaggedFile(path)
+        print tagfile.hash(), os.path.basename(path) if not opts.hash else ''
 
 
 if __name__ == "__main__":
