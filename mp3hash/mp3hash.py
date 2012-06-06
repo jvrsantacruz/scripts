@@ -263,9 +263,11 @@ if __name__ == "__main__":
     logging.basicConfig(level=level, format=_LOGGING_FMT_)
 
     if opts.output:
+        stdout = sys.stdout
         try:
             sys.stdout = open(opts.output, 'w')
         except IOError, err:
+            sys.stdout = stdout
             error("Couldn't open {0}: {1}".format(sys.stdout, err))
 
     if not args and not opts.list_algorithms:
