@@ -7,10 +7,10 @@ Javier Santacruz 12/12/2011
 """
 
 import sys
-import time
 import shutil
 import logging
 import sqlite3
+import tempfile
 from abc import ABCMeta
 from optparse import OptionParser
 
@@ -149,16 +149,16 @@ class Dbfile(object):
             error("Unkown format for dbfile: {0}".format(self.dbpath))
 
     def backup_db(self):
-        "Backs up a given database Returns the path for the copy"
-        backup = "{0}-{1}.bk".format(self.dbpath, str(time.time()))
-        try:
-            shutil.copy(self.dbpath, backup)
-        except shutil.Error:
-            error("Couldn't copy {0} to {1}".format(self.dbpath, backup))
-        else:
-            logging.info("Backed up {0} to {1}".format(self.dbpath, backup))
+        """Backs the destination database into a temporary file.
+        Returns the path for the copy or None in case of failure
+        """
+        with tempfile.NamedTemporaryFile(delete=False) as bkfile:
+            with open(self.dbpath, 'r') as origfile:
+                shutil.copyfileobj(origfile, bkfile)
+                logging.info("Backed up {0} to {1}".format(self.dbpath, bkfile.name))
+                return bkfile.name
 
-        return backup
+        error("Couldn't backup {0}".format(self.dbpath))
 
     def detect_format(self):
         """Returns the format for the database which conn is connected:
