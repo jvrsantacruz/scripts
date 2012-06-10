@@ -74,6 +74,7 @@ class TaggedFile(object):
 
     def __init__(self, path):
         self.path = path
+        self.filesize = os.path.getsize(self.path)
         self.taginfo = None
         self.file = None
 
@@ -110,12 +111,18 @@ class TaggedFile(object):
     @property
     def has_id3v1(self):
         "Returns True if the file is id3v1 tagged"
+        if self.filesize < 128:  # at least 128 bytes are needed
+            return False
+
         self.file.seek(-128, 2)
         return self.file.read(3) == 'TAG'
 
     @property
     def has_id3v1ext(self):
         "Returns True if the file is id3v1 with extended tag"
+        if self.filesize < 128 + 227:
+            return False
+
         self.file.seek(-(227 + 128), 2)  # 227 before regular tag
         return self.file.read(4) == 'TAG+'
 
@@ -141,12 +148,18 @@ class TaggedFile(object):
     @property
     def has_id3v2(self):
         "Returns True if the file is id3v2 tagged"
+        if self.filesize < 10:  # 10 bytes at least for the header
+            return False
+
         self.file.seek(0)
         return self.file.read(3) == 'ID3'
 
     @property
     def has_id3v2ext(self):
         "Returns True if the file has id3v2 extended header"
+        if self.filesize < self.id3v2_size:
+            return False
+
         self.file.seek(5)
         flags, = struct.unpack('>b', self.file.read(1))
         return bool(flags & 0x40)  # xAx0 0000 get A from byte
@@ -166,7 +179,7 @@ class TaggedFile(object):
     @property
     def id3v2ext_size(self):
         "Returns the size in bytes of the id3v2 extended tag"
-        if not self.has_id3v2ext:
+        if not self.has_id3v2 or not self.has_id3v2ext:
             return 0
 
         self.file.seek(self.id3v2_size)
