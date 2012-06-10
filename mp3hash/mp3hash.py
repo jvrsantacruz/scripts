@@ -210,6 +210,11 @@ class TaggedFile(object):
         "Returns the (start, end) for music in file"
         return (self.startbyte, self.endbyte)
 
+    @property
+    def music_size(self):
+        "Returns the total count of bytes of music in file"
+        return self.filesize - self.id3v1_totalsize - self.id3v2_totalsize
+
     def hash(self, alg='sha1'):
         """Returns the hash for a certain audio file ignoring tags
         Non cached function. Calculates the hash each time it's called
