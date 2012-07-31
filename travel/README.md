@@ -2,9 +2,9 @@
 
 Just a quick and dirty Dijkstra's algorithm implementation.
 
-	$ python travel.py travel.yaml malaga manchester
+If you are in Malaga and want to visit Manchester and London and end up in Madrid:
 
-	london madrid
+	$ python travel.yaml malaga manchester london madrid
 	malaga manchester
 	167 ['malaga', 'sevilla', 'gatwick', 'manchester']
 	manchester london
