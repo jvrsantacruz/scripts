@@ -1,0 +1,29 @@
+jerez:
+    - sevilla: 10
+    - madrid: 60
+
+sevilla:
+    - gatwick: 122
+
+madrid:
+    - gatwick: 83
+    - stansted: 93
+
+gatwick:
+    - nottingham: 35
+    - madrid: 103
+
+luton:
+    - madrid: 104
+
+stansted:
+    - nottingham: 30
+    - madrid: 120
+
+nottingham:
+    - london: 40
+
+london:
+    - stansted: 35
+    - gatwick: 30
+    - luton: 40
