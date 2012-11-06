@@ -236,6 +236,21 @@ def sync_dirs(local_files, remote_dir, opts):
     If link is set, will perform hard link instead of copy.
     If force is set, will copy all files ignoring if they're already in remote.
     """
+    if opts.cd:
+        # Maximize de number of files in the CD
+        # omit files until the result fit's into a CD big ones first
+        weighted_files = map(lambda f: (os.path.getsize(f) * 5, f), local_files)
+        weighted_files.sort(key=lambda f: f[0], reverse=True)  # biggers first
+        adder = lambda x, y: x[0] if isinstance(x, tuple) else x + y[0]
+        total_size = reduce(adder, weighted_files)
+
+        cdsize = 700 * 1024 * 1024  # in bytes
+        while total_size > cdsize:
+            size,f = weighted_files.pop()
+            print "Ommiting {0} to fit CD size".format(f)
+            local_files.remove(f)
+            total_size -= size
+
     # Obtain file names in order to compare file subsets
     if opts.shuffle:
         random.shuffle(local_files)
@@ -326,6 +341,10 @@ if __name__ == "__main__":
     parser.add_option("-m", "--mix", dest="mix",
                       action="store_true", default=False,
                       help="Like --shuffle --numbered")
+
+    parser.add_option("-7", "--cd", dest="cd",
+                      action="store_true", default=False,
+                      help="Limits the list size to 700MiB")
 
     parser.add_option("-t", "--format", dest="format",
                       action="store", default=None,
