@@ -4,7 +4,7 @@ Hashes music files ignoring metadata.
 
 Useful to detect the same song in different tagged files.
 
-# How to use it
+# Use
 
 Similarly to `sha1sum` or `md5sum`, it takes one or more files and returns the hashes, in this way:
 
@@ -36,6 +36,11 @@ by calling the program with the `--list-algorithms`.
 	./mp3hash --algorithm md5
 	ac0fdd89454528d3fbdb19942a2e6653 13_Hotel-California-(Gipsy-Kings).mp3
 	ac0fdd89454528d3fbdb19942a2e6653 14_Hotel-California-(Gipsy-Kings).mp3
+
+# Install
+
+It doesn't have any dependences besides `python2.6+` so you should be able to run the script
+straight.
 
 # Technical details
 
