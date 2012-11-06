@@ -61,13 +61,18 @@ class Graph(object):
             ..
             }
         """
-        inf_by_default = lambda: defaultdict(lambda: float('inf'))
-        self.graph = defaultdict(inf_by_default)  # empty dict with inf by def
+        # The graph is a dict of connection dicts
+        # The connection dicts returns infinite for not connected cities
+        # The graph returns an empty connection dict for non existent cities
+        inf = lambda: float('inf')
+        dict_inf = lambda: defaultdict(inf)
+
+        self.graph = defaultdict(dict_inf)
         for origin, dests in open_yaml(graph_path).iteritems():
             ddict = dict()
             for d in dests:
                 ddict.update(d.items())
-                self.graph[origin] = defaultdict(lambda: float('inf'), ddict)
+            self.graph[origin] = defaultdict(inf, ddict)
 
     def min_cost(self, orig, dest):
         """
@@ -117,16 +122,17 @@ def parse_opts():
     """
     parser = OptionParser()
 
-    parser.add_option("-d", "--dbfile", dest="dbfile", action="store",
-                      default="dbsqlite3.db", help="")
+    parser.add_option("-g", "--graph", dest="graph_path", action="store",
+                      default="travel.yaml",
+                      help="""Graph yaml file which should look like:
+                            'place':
+                                - 'other_place': cost
+                            """)
 
     parser.add_option("-v", "--verbose", dest="verbose", action="count",
                       default=0, help="")
 
-    parser.add_option("-u", "--human", dest="human", action="store_true",
-                      default=False, help="Human readable sizes")
-
-    parser.set_usage("Usage: [options] ARG ARG")
+    parser.set_usage("Usage: [options] DEST DEST [DEST..]")
 
     opts, args = parser.parse_args()
 
