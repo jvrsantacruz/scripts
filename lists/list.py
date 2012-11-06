@@ -43,8 +43,8 @@ class Xspf(PIterable):
             raise StopIteration
 
         # get title and remove initial file:///
-        title = str(self.list[self.index].title)
-        path = str(self.list[self.index].location)[7:]
+        title = self.list[self.index].title.text.encode('utf-8')
+        path = self.list[self.index].location.text.encode('utf-8')[7:]
 
         self.index += 1  # next track
 
@@ -219,6 +219,9 @@ def send_files(copy_files, expected_names, remote_dir, dolink=False):
     copied = 0
     for i, cfile in enumerate(copy_files):
         dest = os.path.join(remote_dir, expected_names[i])
+        if os.path.exists(dest):
+            print "Warning: Destination {0} already exists".format(dest)
+            continue
         op_result = link(cfile, dest) if dolink else copy(cfile, dest)
         if op_result:
             copied += 1
