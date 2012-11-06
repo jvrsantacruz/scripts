@@ -38,10 +38,14 @@ def error(msg, is_exit=True):
         sys.exit()
 
 
-def hashfile(ofile, start, end, alg='sha1'):
+def hashfile(ofile, start, end, alg='sha1', maxbytes=None):
     """Hashes a open file data starting from byte 'start' to the byte 'end'
+    max is the maximun amount of data to hash, in bytes.
     The hexdigest string is calculated considering only bytes between start,end
     """
+    if maxbytes:
+        end = min(end, start + maxbytes)
+
     hasher = hashlib.new(alg)
     ofile.seek(start)
 
@@ -217,7 +221,7 @@ class TaggedFile(object):
         "Returns the total count of bytes of music in file"
         return self.filesize - self.id3v1_totalsize - self.id3v2_totalsize
 
-    def hash(self, alg='sha1'):
+    def hash(self, alg='sha1', maxbytes=None):
         """Returns the hash for a certain audio file ignoring tags
         Non cached function. Calculates the hash each time it's called
         """
@@ -229,7 +233,19 @@ class TaggedFile(object):
                               .format(self.path, ioerr))
                 return
             else:
-                return hashfile(ofile, start, end, alg)
+                return hashfile(ofile, start, end, alg, maxbytes)
+
+
+def mp3hash(path, alg='sha1', maxbytes=None):
+    """Returns the hash of the sound contents of a ID3 tagged file
+    Convenience function which wraps TaggedFile
+    Returns None on failure
+    """
+    if maxbytes is not None and maxbytes <= 0:
+        raise ValueError('maxbytes should be a positive integer')
+
+    if os.path.isfile(path):
+        return TaggedFile(path).hash(maxbytes=maxbytes)
 
 
 def list_algorithms():
@@ -275,6 +291,9 @@ if __name__ == "__main__":
                       default=False, help="Print only hash information, no "
                       "filename")
 
+    parser.add_option("-m", "--maxbytes", dest="maxbytes", action="store",
+                      default=None, help="Max number of bytes of music to hash")
+
     parser.add_option("-o", "--output", dest="output", action="store",
                       default=False, help="Redirect output to a file")
 
@@ -302,5 +321,10 @@ if __name__ == "__main__":
         parser.print_help()
         print
         error("Insufficient arguments")
+
+    if opts.maxbytes is not None and opts.maxbytes <= 0:
+        parser.print_help()
+        print
+        error("Invalid value for --maxbytes it should be a positive integer")
 
     main()
